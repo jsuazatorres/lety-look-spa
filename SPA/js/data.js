@@ -2,7 +2,7 @@
  * Data Storage & Seed Module for LETY LOOK SPA
  */
 
-const STORAGE_KEYS = window.STORAGE_KEYS || {
+window.STORAGE_KEYS = window.STORAGE_KEYS || {
     SERVICES: 'lety_look_services',
     STAFF: 'lety_look_staff',
     APPOINTMENTS: 'lety_look_appointments',
@@ -10,7 +10,7 @@ const STORAGE_KEYS = window.STORAGE_KEYS || {
     CLIENTS: 'lety_look_clients',
     CURRENT_CLIENT: 'lety_look_current_client'
 };
-window.STORAGE_KEYS = STORAGE_KEYS;
+var STORAGE_KEYS = window.STORAGE_KEYS;
 
 const DEFAULT_CATEGORIES = [
     { id: 'manicura', name: 'Manicura', icon: 'fa-hand-sparkles', description: 'Cuidado, esculpido y diseño de uñas de manos' },
@@ -210,35 +210,7 @@ const DEFAULT_STAFF = [
     }
 ];
 
-const DEFAULT_CLIENTS = [
-    {
-        id: 'cli-1',
-        name: 'María Fernanda Ruiz',
-        email: 'mafe.ruiz@gmail.com',
-        phone: '3001234567',
-        password: '123',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=60',
-        createdAt: '2026-08-01'
-    },
-    {
-        id: 'cli-2',
-        name: 'Diana Marcela Torres',
-        email: 'diana.torres@outlook.com',
-        phone: '3119871122',
-        password: '123',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=60',
-        createdAt: '2026-08-10'
-    },
-    {
-        id: 'cli-3',
-        name: 'Valentina Martínez',
-        email: 'valentina@gmail.com',
-        phone: '3109876543',
-        password: '123',
-        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=60',
-        createdAt: '2026-08-15'
-    }
-];
+const DEFAULT_CLIENTS = [];
 
 function getFormattedDate(offsetDays = 0) {
     const d = new Date();
@@ -452,42 +424,7 @@ class SpaDataManager {
     // CLIENT AUTHENTICATION & MANAGEMENT
     // ==========================================
     getClients() {
-        let clients = JSON.parse(localStorage.getItem(STORAGE_KEYS.CLIENTS)) || [];
-        
-        // Auto-consolidate clients from appointments if any are missing
-        const appointments = JSON.parse(localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) || [];
-        let updated = false;
-
-        appointments.forEach(apt => {
-            if (!apt.clientName) return;
-            const cleanPhone = apt.clientPhone ? apt.clientPhone.replace(/\D/g, '') : '';
-            const cleanEmail = apt.clientEmail ? apt.clientEmail.trim().toLowerCase() : '';
-
-            const exists = clients.some(c => 
-                (c.id && apt.clientId && c.id === apt.clientId) ||
-                (cleanEmail && c.email && c.email.toLowerCase() === cleanEmail) ||
-                (cleanPhone && cleanPhone.length >= 7 && c.phone && c.phone.replace(/\D/g, '') === cleanPhone)
-            );
-
-            if (!exists) {
-                const newClient = {
-                    id: apt.clientId || ('cli-' + Date.now()),
-                    name: apt.clientName.trim(),
-                    email: cleanEmail,
-                    phone: cleanPhone || apt.clientPhone,
-                    createdAt: apt.date || new Date().toISOString(),
-                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(apt.clientName)}&background=d45979&color=fff&bold=true`
-                };
-                clients.push(newClient);
-                updated = true;
-            }
-        });
-
-        if (updated) {
-            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
-        }
-
-        return clients;
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.CLIENTS)) || [];
     }
 
     getClientById(id) {
@@ -496,11 +433,14 @@ class SpaDataManager {
 
     getClientByEmailOrPhone(identifier) {
         if (!identifier) return null;
-        const clean = identifier.trim().toLowerCase();
-        const cleanPhone = identifier.trim().replace(/\D/g, '');
-        return this.getClients().find(c => {
-            const matchEmail = c.email && c.email.toLowerCase() === clean;
-            const matchPhone = cleanPhone && cleanPhone.length >= 7 && c.phone && c.phone.replace(/\D/g, '') === cleanPhone;
+        const clean = String(identifier).trim().toLowerCase();
+        const cleanPhone = String(identifier).replace(/\D/g, '');
+        const clients = this.getClients();
+        return clients.find(c => {
+            if (!c || typeof c !== 'object') return false;
+            const matchEmail = c.email && typeof c.email === 'string' && c.email.toLowerCase() === clean;
+            const phoneStr = c.phone ? String(c.phone).replace(/\D/g, '') : '';
+            const matchPhone = cleanPhone && cleanPhone.length >= 7 && phoneStr && (phoneStr === cleanPhone || phoneStr.endsWith(cleanPhone) || cleanPhone.endsWith(phoneStr));
             return matchEmail || matchPhone;
         });
     }
@@ -512,8 +452,8 @@ class SpaDataManager {
 
         // Check if existing by email or full phone
         const existing = clients.find(c => 
-            (c.email && c.email.toLowerCase() === cleanEmail) ||
-            (cleanPhone && cleanPhone.length >= 7 && c.phone && c.phone.replace(/\D/g, '') === cleanPhone)
+            c && ((c.email && c.email.toLowerCase() === cleanEmail) ||
+            (cleanPhone && cleanPhone.length >= 7 && c.phone && String(c.phone).replace(/\D/g, '') === cleanPhone))
         );
 
         if (existing) {
@@ -531,7 +471,11 @@ class SpaDataManager {
         };
 
         clients.push(newClient);
-        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+        try {
+            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+        } catch (e) {
+            console.warn('LocalStorage quota warning in registerClient:', e);
+        }
         this.setCurrentClient(newClient);
         if (window.cloudService && window.cloudService.isInitialized) {
             window.cloudService.saveCloudDocument('lety_look_clients', newClient.id, newClient);
@@ -540,18 +484,21 @@ class SpaDataManager {
     }
 
     async loginClient(identifier, password) {
+        if (!identifier) return { success: false, message: 'Ingresa tu correo o número de celular.' };
+        const cleanId = String(identifier).trim().toLowerCase();
+        const cleanPhone = String(identifier).replace(/\D/g, '');
+
         let client = this.getClientByEmailOrPhone(identifier);
 
         // If not found in localStorage, fetch from Firestore cloud directly
         if (!client && window.cloudService && window.cloudService.db) {
             try {
-                const cleanId = (identifier || '').trim().toLowerCase();
-                const cleanPhone = (identifier || '').trim().replace(/\D/g, '');
                 const snapshot = await window.cloudService.db.collection('lety_look_clients').get();
                 snapshot.forEach(doc => {
                     const data = { id: doc.id, ...doc.data() };
-                    const matchEmail = data.email && data.email.toLowerCase() === cleanId;
-                    const matchPhone = cleanPhone && cleanPhone.length >= 7 && data.phone && data.phone.replace(/\D/g, '') === cleanPhone;
+                    const matchEmail = data.email && String(data.email).toLowerCase() === cleanId;
+                    const dataPhone = data.phone ? String(data.phone).replace(/\D/g, '') : '';
+                    const matchPhone = cleanPhone && cleanPhone.length >= 7 && dataPhone && (dataPhone === cleanPhone || dataPhone.endsWith(cleanPhone) || cleanPhone.endsWith(dataPhone));
                     if (matchEmail || matchPhone) {
                         client = data;
                     }
@@ -559,13 +506,15 @@ class SpaDataManager {
 
                 if (client) {
                     let localClients = this.getClients();
-                    const idx = localClients.findIndex(c => c.id === client.id);
+                    const idx = localClients.findIndex(c => c && c.id === client.id);
                     if (idx !== -1) {
                         localClients[idx] = client;
                     } else {
                         localClients.push(client);
                     }
-                    localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(localClients));
+                    try {
+                        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(localClients));
+                    } catch (e) {}
                 }
             } catch (err) {
                 console.error('Error querying Firestore for client login:', err);
@@ -591,18 +540,20 @@ class SpaDataManager {
             return { success: false, message: 'La nueva contraseña debe tener al menos 4 caracteres.' };
         }
 
+        const cleanId = String(identifier).trim().toLowerCase();
+        const cleanPhone = String(identifier).replace(/\D/g, '');
+
         let client = this.getClientByEmailOrPhone(identifier);
 
         // If not in localStorage yet, search in Firestore cloud directly
         if (!client && window.cloudService && window.cloudService.db) {
             try {
-                const cleanId = (identifier || '').trim().toLowerCase();
-                const cleanPhone = (identifier || '').trim().replace(/\D/g, '');
                 const snapshot = await window.cloudService.db.collection('lety_look_clients').get();
                 snapshot.forEach(doc => {
                     const data = { id: doc.id, ...doc.data() };
-                    const matchEmail = data.email && data.email.toLowerCase() === cleanId;
-                    const matchPhone = cleanPhone && cleanPhone.length >= 7 && data.phone && data.phone.replace(/\D/g, '') === cleanPhone;
+                    const matchEmail = data.email && String(data.email).toLowerCase() === cleanId;
+                    const dataPhone = data.phone ? String(data.phone).replace(/\D/g, '') : '';
+                    const matchPhone = cleanPhone && cleanPhone.length >= 7 && dataPhone && (dataPhone === cleanPhone || dataPhone.endsWith(cleanPhone) || cleanPhone.endsWith(dataPhone));
                     if (matchEmail || matchPhone) {
                         client = data;
                     }
@@ -610,13 +561,15 @@ class SpaDataManager {
 
                 if (client) {
                     let localClients = this.getClients();
-                    const idx = localClients.findIndex(c => c.id === client.id);
+                    const idx = localClients.findIndex(c => c && c.id === client.id);
                     if (idx !== -1) {
                         localClients[idx] = client;
                     } else {
                         localClients.push(client);
                     }
-                    localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(localClients));
+                    try {
+                        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(localClients));
+                    } catch (e) {}
                 }
             } catch (err) {
                 console.error('Error querying Firestore for client reset:', err);
@@ -628,21 +581,44 @@ class SpaDataManager {
         }
 
         let clients = this.getClients();
-        const clientIndex = clients.findIndex(c => c.id === client.id);
-        if (clientIndex !== -1) {
-            clients[clientIndex].password = newPassword;
-            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
-            this.setCurrentClient(clients[clientIndex]);
+        let targetIndex = clients.findIndex(c => c && (c.id === client.id || (c.email && String(c.email).toLowerCase() === cleanId)));
 
-            // Sync with Firestore Cloud immediately
-            if (window.cloudService && window.cloudService.isInitialized) {
-                window.cloudService.saveCloudDocument('lety_look_clients', clients[clientIndex].id, clients[clientIndex]);
-            }
-
-            return { success: true, client: clients[clientIndex], message: '¡Contraseña restablecida con éxito!' };
+        if (targetIndex === -1) {
+            clients.push(client);
+            targetIndex = clients.length - 1;
         }
 
-        return { success: false, message: 'No fue posible actualizar la contraseña.' };
+        clients[targetIndex].password = newPassword;
+        if (!clients[targetIndex].id) {
+            clients[targetIndex].id = client.id || ('cli-' + Date.now());
+        }
+
+        try {
+            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+        } catch (e) {
+            console.warn('LocalStorage setItem quota warning, pruning base64:', e);
+            clients.forEach(c => {
+                if (c && c.avatar && c.avatar.startsWith('data:image') && c.avatar.length > 50000) {
+                    c.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || 'User')}&background=d45979&color=fff&bold=true`;
+                }
+            });
+            try {
+                localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+            } catch (e2) {}
+        }
+
+        this.setCurrentClient(clients[targetIndex]);
+
+        // Sync with Firestore Cloud immediately
+        if (window.cloudService && window.cloudService.isInitialized) {
+            try {
+                window.cloudService.saveCloudDocument('lety_look_clients', clients[targetIndex].id, clients[targetIndex]);
+            } catch (cloudErr) {
+                console.error('Cloud save warning in resetClientPassword:', cloudErr);
+            }
+        }
+
+        return { success: true, client: clients[targetIndex], message: '¡Contraseña restablecida con éxito!' };
     }
 
     getCurrentClient() {
@@ -698,12 +674,28 @@ class SpaDataManager {
         return { success: false, message: 'Cliente no encontrado' };
     }
 
-    deleteClient(id) {
+    async deleteClient(id) {
         let clients = this.getClients();
-        clients = clients.filter(c => c.id !== id);
+        const clientToDelete = clients.find(c => c && c.id === id);
+        clients = clients.filter(c => c && c.id !== id);
         localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+        
+        const current = this.getCurrentClient();
+        if (current && (current.id === id || (clientToDelete && clientToDelete.email && current.email === clientToDelete.email))) {
+            this.logoutClient();
+        }
+
         if (window.cloudService && window.cloudService.isInitialized) {
-            window.cloudService.deleteCloudDocument('lety_look_clients', id);
+            await window.cloudService.deleteCloudClient(id, clientToDelete);
+        }
+        return true;
+    }
+
+    async clearAllClients() {
+        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify([]));
+        this.logoutClient();
+        if (window.cloudService && window.cloudService.isInitialized) {
+            await window.cloudService.clearCloudCollection('lety_look_clients');
         }
         return true;
     }
@@ -827,4 +819,5 @@ class SpaDataManager {
 }
 
 // Global instance
-window.dataManager = new SpaDataManager();
+window.SpaDataManager = SpaDataManager;
+window.dataManager = window.dataManager || new SpaDataManager();

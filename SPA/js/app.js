@@ -1435,18 +1435,38 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Delete client
+        // Delete single client
         tbody.querySelectorAll('.btn-client-row-delete').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const clientId = btn.getAttribute('data-id');
-                if (confirm('¿Deseas eliminar a este cliente del registro?')) {
-                    window.dataManager.deleteClient(clientId);
-                    showToast('Cliente eliminado del directorio', 'info');
+                if (confirm('¿Deseas eliminar permanentemente a esta clienta del registro y de la nube?')) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    await window.dataManager.deleteClient(clientId);
+                    showToast('Clienta eliminada permanentemente', 'info');
                     renderClientsList();
                 }
             });
         });
     }
+
+    // Clear all registered clients to start fresh
+    document.getElementById('btn-clear-all-clients')?.addEventListener('click', async () => {
+        if (confirm('¿Estás seguro de que deseas ELIMINAR A TODAS las clientas registradas de la base de datos (tanto local como en la nube) para empezar desde cero?\n\nEsta acción no se puede deshacer.')) {
+            const btn = document.getElementById('btn-clear-all-clients');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Limpiando...';
+            }
+            await window.dataManager.clearAllClients();
+            showToast('Directorio de clientes vaciado exitosamente', 'success');
+            renderClientsList();
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> <span>Vaciar Directorio</span>';
+            }
+        }
+    });
 
     document.getElementById('clients-search-input')?.addEventListener('input', (e) => {
         clientsSearchQuery = e.target.value;

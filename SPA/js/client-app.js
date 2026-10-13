@@ -64,7 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 await reg.unregister();
             }
         }
-        window.dataManager.init();
+        if (window.dataManager && typeof window.dataManager.init === 'function') {
+            window.dataManager.init();
+        }
         window.location.reload();
     });
     function formatCurrency(amount) {
@@ -119,6 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. AUTHENTICATION & HEADER UI CONTROLLER
     // =========================================================================
     function updateAuthUI() {
+        if (!window.dataManager && window.SpaDataManager) {
+            window.dataManager = new window.SpaDataManager();
+        }
+        if (!window.dataManager) return;
         const currentClient = window.dataManager.getCurrentClient();
         const headerBadge = document.getElementById('header-auth-badge');
         const navAccountLabel = document.getElementById('nav-account-label');
@@ -795,6 +801,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. ACCOUNT TAB (LOGIN, REGISTER, PROFILE)
     // =========================================================================
     function renderAccountTab() {
+        if (!window.dataManager && window.SpaDataManager) {
+            window.dataManager = new window.SpaDataManager();
+        }
+        if (!window.dataManager) return;
         const currentClient = window.dataManager.getCurrentClient();
         const unauthView = document.getElementById('auth-unauthenticated-view');
         const authView = document.getElementById('auth-authenticated-view');
@@ -963,13 +973,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Register Form Submit
-    document.getElementById('client-register-form')?.addEventListener('submit', (e) => {
+    document.getElementById('client-register-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('reg-name').value.trim();
         const phone = document.getElementById('reg-phone').value.trim();
         const email = document.getElementById('reg-email').value.trim();
         const password = document.getElementById('reg-password').value;
         const errorBox = document.getElementById('auth-error-box');
+        const submitBtn = e.target.querySelector('button[type="submit"]');
 
         if (!name || !phone || !email || !password) {
             errorBox.textContent = 'Por favor completa todos los campos requeridos.';
@@ -977,24 +988,48 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const result = window.dataManager.registerClient({ 
-            name, 
-            phone, 
-            email, 
-            password,
-            avatar: regAvatarDataUrl || undefined 
-        });
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Creando cuenta...</span>';
+        }
 
-        if (result.success) {
-            errorBox.style.display = 'none';
-            document.getElementById('client-register-form').reset();
-            regAvatarDataUrl = null;
-            updateAuthUI();
-            alert(`¡Bienvenida a LETY LOOK, ${name.split(' ')[0]}! Tu cuenta ha sido creada con éxito.`);
-            switchTab('tab-explore');
-        } else {
-            errorBox.textContent = result.message;
+        try {
+            if (!window.dataManager && window.SpaDataManager) {
+                window.dataManager = new window.SpaDataManager();
+            }
+            if (!window.dataManager) {
+                throw new Error('El gestor de datos no está listo. Recarga la página.');
+            }
+
+            const result = await window.dataManager.registerClient({ 
+                name, 
+                phone, 
+                email, 
+                password,
+                avatar: regAvatarDataUrl || undefined 
+            });
+
+            if (result.success) {
+                errorBox.style.display = 'none';
+                document.getElementById('client-register-form').reset();
+                regAvatarDataUrl = null;
+                updateAuthUI();
+                alert(`¡Bienvenida a LETY LOOK, ${name.split(' ')[0]}! Tu cuenta ha sido creada con éxito.`);
+                switchTab('tab-explore');
+            } else {
+                errorBox.textContent = result.message || 'No se pudo crear la cuenta.';
+                errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            console.error('Register submit error:', err);
+            errorBox.textContent = (err && err.message) ? err.message : 'Error al registrar la cuenta. Intenta de nuevo.';
             errorBox.style.display = 'block';
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         }
     });
 
@@ -1032,19 +1067,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            if (!window.dataManager && window.SpaDataManager) {
+                window.dataManager = new window.SpaDataManager();
+            }
+            if (!window.dataManager) {
+                throw new Error('El gestor de datos no está listo aún. Intenta nuevamente.');
+            }
             const result = await window.dataManager.resetClientPassword(identifier, newPassword);
             if (result.success) {
                 errorBox.style.display = 'none';
-                document.getElementById('client-forgot-form').reset();
+                document.getElementById('client-forgot-form')?.reset();
                 updateAuthUI();
-                alert(`¡Contraseña restablecida con éxito! Bienvenida de nuevo, ${result.client.name.split(' ')[0]}.`);
+                const clientName = (result.client && (result.client.name || result.client.clientName)) || 'Cliente';
+                const firstName = clientName.split(' ')[0] || 'Cliente';
+                alert(`¡Contraseña restablecida con éxito! Bienvenida de nuevo, ${firstName}.`);
                 switchTab('tab-my-appointments');
             } else {
-                errorBox.textContent = result.message;
+                errorBox.textContent = result.message || 'No se pudo actualizar la contraseña.';
                 errorBox.style.display = 'block';
             }
         } catch (err) {
-            errorBox.textContent = 'Error al conectar con la base de datos. Intenta de nuevo.';
+            console.error('Password reset submit error:', err);
+            errorBox.textContent = (err && err.message) ? `Error: ${err.message}` : 'Error al conectar con la base de datos. Intenta de nuevo.';
             errorBox.style.display = 'block';
         } finally {
             if (submitBtn) {

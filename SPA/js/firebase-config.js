@@ -15,7 +15,7 @@ const DEFAULT_FIREBASE_CONFIG = {
 
 const FIREBASE_CONFIG_KEY = 'lety_look_firebase_config';
 
-const STORAGE_KEYS = window.STORAGE_KEYS || {
+window.STORAGE_KEYS = window.STORAGE_KEYS || {
     SERVICES: 'lety_look_services',
     STAFF: 'lety_look_staff',
     APPOINTMENTS: 'lety_look_appointments',
@@ -23,7 +23,7 @@ const STORAGE_KEYS = window.STORAGE_KEYS || {
     CLIENTS: 'lety_look_clients',
     CURRENT_CLIENT: 'lety_look_current_client'
 };
-window.STORAGE_KEYS = STORAGE_KEYS;
+var STORAGE_KEYS = window.STORAGE_KEYS;
 
 class FirebaseCloudService {
     constructor() {
@@ -137,44 +137,29 @@ class FirebaseCloudService {
             }
         }, err => console.log('Firestore settings sync error:', err));
 
-        // 5. Sync Clients (Crucial: download all cloud clients to localStorage immediately)
+        // 5. Sync Clients (Cloud Firestore is the single source of truth)
         this.db.collection('lety_look_clients').onSnapshot(snapshot => {
             const cloudClients = [];
-            snapshot.forEach(doc => cloudClients.push({ id: doc.id, ...doc.data() }));
-            
-            const localClients = JSON.parse(localStorage.getItem(STORAGE_KEYS.CLIENTS)) || [];
-            const mergedMap = new Map();
-            
-            // Retain local clients
-            localClients.forEach(c => {
-                if (c && c.id) mergedMap.set(c.id, c);
+            snapshot.forEach(doc => {
+                cloudClients.push({ id: doc.id, ...doc.data() });
             });
-            // Cloud clients take precedence (including updated passwords)
-            cloudClients.forEach(c => {
-                if (c && c.id) mergedMap.set(c.id, c);
-            });
+            
+            // Cloud takes precedence directly
+            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(cloudClients));
 
-            const merged = Array.from(mergedMap.values());
-            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(merged));
-
-            // Refresh CURRENT_CLIENT if currently logged in user was modified in cloud!
+            // Refresh CURRENT_CLIENT if currently logged in user was modified or deleted
             const currentRaw = localStorage.getItem(STORAGE_KEYS.CURRENT_CLIENT);
             if (currentRaw) {
                 try {
                     const current = JSON.parse(currentRaw);
-                    const freshClient = merged.find(c => c.id === current.id || (c.email && c.email.toLowerCase() === (current.email || '').toLowerCase()));
+                    const freshClient = cloudClients.find(c => c.id === current.id || (c.email && c.email.toLowerCase() === (current.email || '').toLowerCase()));
                     if (freshClient) {
                         localStorage.setItem(STORAGE_KEYS.CURRENT_CLIENT, JSON.stringify(freshClient));
+                    } else {
+                        localStorage.removeItem(STORAGE_KEYS.CURRENT_CLIENT);
                     }
                 } catch (e) {}
             }
-
-            // Auto-upload any local clients not yet in cloud
-            localClients.forEach(c => {
-                if (c && c.id && !cloudClients.some(cc => cc.id === c.id)) {
-                    this.saveCloudDocument('lety_look_clients', c.id, c);
-                }
-            });
 
             this.triggerSync('clients');
         }, err => console.log('Firestore clients sync error:', err));
@@ -198,6 +183,59 @@ class FirebaseCloudService {
             return true;
         } catch (error) {
             console.error(`Error deleting cloud document in ${collectionName}/${docId}:`, error);
+            return false;
+        }
+    }
+
+    async deleteCloudClient(id, clientData = null) {
+        if (!this.db || !this.isInitialized) return false;
+        try {
+            // Delete directly by doc ID
+            await this.db.collection('lety_look_clients').doc(id).delete();
+
+            // Also clean up duplicates with same email or phone if any
+            if (clientData) {
+                const cleanEmail = clientData.email ? String(clientData.email).trim().toLowerCase() : '';
+                const cleanPhone = clientData.phone ? String(clientData.phone).replace(/\D/g, '') : '';
+                
+                const snap = await this.db.collection('lety_look_clients').get();
+                const batch = this.db.batch();
+                let hasExtra = false;
+
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const dEmail = d.email ? String(d.email).trim().toLowerCase() : '';
+                    const dPhone = d.phone ? String(d.phone).replace(/\D/g, '') : '';
+                    if (doc.id === id || (cleanEmail && dEmail === cleanEmail) || (cleanPhone && cleanPhone.length >= 7 && dPhone === cleanPhone)) {
+                        batch.delete(doc.ref);
+                        hasExtra = true;
+                    }
+                });
+
+                if (hasExtra) {
+                    await batch.commit();
+                }
+            }
+            return true;
+        } catch (error) {
+            console.error('Error deleting cloud client:', error);
+            return false;
+        }
+    }
+
+    async clearCloudCollection(collectionName) {
+        if (!this.db || !this.isInitialized) return false;
+        try {
+            const snap = await this.db.collection(collectionName).get();
+            const batch = this.db.batch();
+            snap.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`Colección ${collectionName} vaciada exitosamente en la nube.`);
+            return true;
+        } catch (error) {
+            console.error(`Error clearing cloud collection ${collectionName}:`, error);
             return false;
         }
     }
