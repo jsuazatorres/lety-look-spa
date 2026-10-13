@@ -22,7 +22,7 @@
     <!-- Cloud Database (Firebase Firestore) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="js/firebase-config.js?v=11.0"></script>
+    <script src="js/firebase-config.js?v=17.0"></script>
     <!-- Client App Stylesheet -->
     <link rel="stylesheet" href="css/client-app.css?v=8.0">
 </head>
@@ -52,20 +52,20 @@
              TAB 1: EXPLORE & SERVICES CATALOG
              ====================================================================== -->
         <section id="tab-explore" class="tab-content active">
-            <!-- Native Android Install App Prompt Banner (Always Visible) -->
-            <div id="android-install-banner" style="display:flex; margin:0.85rem 1.25rem 0.25rem; background:linear-gradient(135deg, #0d9488, #059669); color:white; border-radius:var(--radius-md); padding:0.9rem 1.15rem; align-items:center; justify-content:space-between; box-shadow:0 6px 16px rgba(13, 148, 136, 0.3); border:1px solid #34d399;">
+            <!-- Smart Dynamic Install App Banner (Only visible when NOT logged in) -->
+            <div id="client-install-banner" style="display:none; margin:0.85rem 1.25rem 0.25rem; background:linear-gradient(135deg, #0d9488, #059669); color:white; border-radius:var(--radius-md); padding:0.9rem 1.15rem; align-items:center; justify-content:space-between; box-shadow:0 6px 16px rgba(13, 148, 136, 0.3); border:1px solid #34d399;">
                 <div style="display:flex; align-items:center; gap:0.75rem;">
-                    <div style="width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center;">
-                        <i class="fa-brands fa-android" style="font-size:1.4rem; color:#fff;"></i>
+                    <div id="install-banner-icon-wrap" style="width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center;">
+                        <i id="install-banner-icon" class="fa-brands fa-android" style="font-size:1.4rem; color:#fff;"></i>
                     </div>
                     <div style="font-size:0.82rem; line-height:1.25;">
-                        <strong style="font-size:0.88rem;">Descargar App para Android</strong>
-                        <div style="font-size:0.72rem; opacity:0.95;">Instala LETY LOOK en tu celular</div>
+                        <strong id="install-banner-title" style="font-size:0.88rem;">Descargar App para Celular</strong>
+                        <div id="install-banner-desc" style="font-size:0.72rem; opacity:0.95;">Instala LETY LOOK en tu teléfono</div>
                     </div>
                 </div>
-                <button id="btn-trigger-android-install" type="button" style="background:#fff; color:#065f46; border:none; padding:0.55rem 1rem; border-radius:var(--radius-full); font-size:0.78rem; font-weight:800; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.15); display:flex; align-items:center; gap:0.35rem;">
+                <button id="btn-trigger-client-install" type="button" style="background:#fff; color:#065f46; border:none; padding:0.55rem 1rem; border-radius:var(--radius-full); font-size:0.78rem; font-weight:800; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.15); display:flex; align-items:center; gap:0.35rem; white-space:nowrap;">
                     <i class="fa-solid fa-download"></i>
-                    <span>Instalar APK</span>
+                    <span id="install-banner-btn-text">Instalar</span>
                 </button>
             </div>
 
@@ -331,6 +331,22 @@
                     <button id="btn-tab-register" class="auth-tab-btn" type="button">Crear Cuenta</button>
                 </div>
 
+                <!-- Install App Notice (Only visible when about to log in or register) -->
+                <div id="account-unauth-install-prompt" style="display:none; margin-bottom:1rem; padding:0.85rem 1rem; background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:var(--radius-md); align-items:center; justify-content:space-between; gap:0.75rem;">
+                    <div style="display:flex; align-items:center; gap:0.65rem;">
+                        <div id="account-install-icon-wrap" style="width:34px; height:34px; border-radius:50%; background:var(--primary-light, #fbecee); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+                            <i id="account-install-icon" class="fa-brands fa-android"></i>
+                        </div>
+                        <div style="line-height:1.25;">
+                            <strong id="account-install-title" style="font-size:0.82rem; color:var(--text-main);">Instala la App en tu celular</strong>
+                            <div id="account-install-subtitle" style="font-size:0.72rem; color:var(--text-secondary);">Accede rápido y no pierdas tus citas</div>
+                        </div>
+                    </div>
+                    <button id="btn-trigger-account-install" type="button" class="btn-book-service" style="padding:0.4rem 0.8rem; font-size:0.75rem; white-space:nowrap;">
+                        <span id="account-install-btn-text">Instalar</span>
+                    </button>
+                </div>
+
                 <div id="auth-error-box" class="auth-alert-error"></div>
 
                 <!-- Login Form -->
@@ -459,9 +475,6 @@
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
-                    <button id="btn-profile-install-apk" class="btn-book-service" style="justify-content:center; padding:0.75rem; background:#0d9488; color:#fff; border-color:#0d9488;">
-                        <i class="fa-brands fa-android"></i> <span>Descargar App Android (APK)</span>
-                    </button>
                     <button id="btn-profile-go-to-appointments" class="btn-book-service" style="justify-content:center; padding:0.75rem;">
                         <i class="fa-solid fa-clock-rotate-left"></i> Ver Mis Citas Reservadas
                     </button>
@@ -472,23 +485,23 @@
             </div>
         </section>
 
-        <!-- Android APK Install Guide Modal -->
-        <div id="modal-apk-instructions" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
-            <div style="background:#fff; border-radius:var(--radius-lg); padding:1.5rem; max-width:380px; width:100%; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center;">
-                <div style="width:54px; height:54px; border-radius:50%; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 1rem;">
-                    <i class="fa-brands fa-android"></i>
+        <!-- Dynamic Smart App Installation Instructions Modal (iOS & Android) -->
+        <div id="modal-install-instructions" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
+            <div style="background:var(--bg-surface, #fff); border-radius:var(--radius-lg); padding:1.75rem 1.4rem; max-width:390px; width:100%; box-shadow:0 15px 40px rgba(0,0,0,0.4); text-align:center; border:1px solid var(--border-color);">
+                <div id="modal-install-icon-wrap" style="width:58px; height:58px; border-radius:50%; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.9rem; margin:0 auto 1rem;">
+                    <i id="modal-install-icon" class="fa-brands fa-android"></i>
                 </div>
-                <h3 style="font-size:1.2rem; margin-bottom:0.5rem; color:var(--text-main);">Instalar App en Android</h3>
-                <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.4; margin-bottom:1.25rem;">
-                    Para instalar la app de <strong>LETY LOOK</strong> directamente en tu celular como APK:
+                <h3 id="modal-install-title" style="font-family:'Playfair Display', serif; font-size:1.3rem; margin-bottom:0.4rem; color:var(--text-main);">Instalar Aplicación</h3>
+                <p id="modal-install-subtitle" style="font-size:0.83rem; color:var(--text-secondary); line-height:1.4; margin-bottom:1.25rem;">
+                    Instala <strong>LETY LOOK</strong> en tu celular para tener acceso directo y reservar tus citas en segundos:
                 </p>
-                <div style="text-align:left; background:var(--bg-subtle); padding:0.85rem 1rem; border-radius:var(--radius-md); font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.25rem; display:flex; flex-direction:column; gap:0.5rem;">
-                    <div><strong>1.</strong> Toca los <strong>3 puntos (⋮)</strong> en la esquina superior derecha de tu navegador Chrome.</div>
-                    <div><strong>2.</strong> Selecciona <strong>"Instalar aplicación"</strong> o <strong>"Agregar a pantalla principal"</strong>.</div>
-                    <div><strong>3.</strong> ¡Listo! Se abrirá como App nativa en tu teléfono.</div>
+                
+                <div id="modal-install-steps" style="text-align:left; background:var(--bg-subtle); padding:0.95rem 1rem; border-radius:var(--radius-md); font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.25rem; display:flex; flex-direction:column; gap:0.65rem; border:1px solid var(--border-color);">
+                    <!-- Dynamic steps inserted via JS -->
                 </div>
-                <button id="btn-close-apk-modal" type="button" class="btn-hero-book" style="width:100%; justify-content:center; padding:0.75rem;">
-                    Entendido
+
+                <button id="btn-close-install-modal" type="button" class="btn-hero-book" style="width:100%; justify-content:center; padding:0.8rem; font-size:0.9rem;">
+                    ¡Entendido!
                 </button>
             </div>
         </div>
@@ -521,7 +534,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=13.0"></script>
-    <script src="js/client-app.js?v=13.0"></script>
+    <script src="js/data.js?v=17.0"></script>
+    <script src="js/client-app.js?v=17.0"></script>
 </body>
 </html>

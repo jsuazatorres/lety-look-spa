@@ -18,38 +18,177 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmedAppointment: null
     };
 
-    // PWA Service Worker & Android Installation Handler
+    // =========================================================================
+    // SMART PWA & DEVICE INSTALLATION CONTROLLER (iOS / iPhone & Android)
+    // =========================================================================
     let deferredPrompt = null;
-    const installBanner = document.getElementById('android-install-banner');
-    const installBtn = document.getElementById('btn-trigger-android-install');
-    const profileInstallBtn = document.getElementById('btn-profile-install-apk');
-    const apkModal = document.getElementById('modal-apk-instructions');
-    const closeApkModalBtn = document.getElementById('btn-close-apk-modal');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         window.navigator.standalone === true;
+
+    const topInstallBanner = document.getElementById('client-install-banner');
+    const topInstallBtn = document.getElementById('btn-trigger-client-install');
+    const accountInstallPrompt = document.getElementById('account-unauth-install-prompt');
+    const accountInstallBtn = document.getElementById('btn-trigger-account-install');
+    const installModal = document.getElementById('modal-install-instructions');
+    const closeInstallModalBtn = document.getElementById('btn-close-install-modal');
+
+    function setupInstallUI() {
+        const bannerIcon = document.getElementById('install-banner-icon');
+        const bannerIconWrap = document.getElementById('install-banner-icon-wrap');
+        const bannerTitle = document.getElementById('install-banner-title');
+        const bannerDesc = document.getElementById('install-banner-desc');
+        const bannerBtnText = document.getElementById('install-banner-btn-text');
+
+        const accIcon = document.getElementById('account-install-icon');
+        const accIconWrap = document.getElementById('account-install-icon-wrap');
+        const accTitle = document.getElementById('account-install-title');
+        const accSubtitle = document.getElementById('account-install-subtitle');
+        const accBtnText = document.getElementById('account-install-btn-text');
+
+        if (isIOS) {
+            // iOS / iPhone Custom UI
+            if (topInstallBanner) {
+                topInstallBanner.style.background = 'linear-gradient(135deg, #18181b, #09090b)';
+                topInstallBanner.style.border = '1px solid rgba(255,255,255,0.18)';
+                topInstallBanner.style.boxShadow = '0 6px 20px rgba(0,0,0,0.5)';
+            }
+            if (bannerIcon) bannerIcon.className = 'fa-brands fa-apple';
+            if (bannerIconWrap) bannerIconWrap.style.background = 'rgba(255,255,255,0.15)';
+            if (bannerTitle) bannerTitle.textContent = 'Instalar App en tu iPhone';
+            if (bannerDesc) bannerDesc.textContent = 'Agrégala a tu pantalla de inicio en Safari';
+            if (bannerBtnText) bannerBtnText.textContent = 'Ver Pasos';
+
+            if (accIcon) accIcon.className = 'fa-brands fa-apple';
+            if (accIconWrap) {
+                accIconWrap.style.background = '#f4f4f5';
+                accIconWrap.style.color = '#18181b';
+            }
+            if (accTitle) accTitle.textContent = 'Instala LETY LOOK en tu iPhone';
+            if (accSubtitle) accSubtitle.textContent = 'Acceso directo a pantalla completa desde Safari';
+            if (accBtnText) accBtnText.textContent = 'Ver Pasos';
+        } else if (isAndroid) {
+            // Android Custom UI
+            if (topInstallBanner) {
+                topInstallBanner.style.background = 'linear-gradient(135deg, #0d9488, #059669)';
+                topInstallBanner.style.border = '1px solid #34d399';
+            }
+            if (bannerIcon) bannerIcon.className = 'fa-brands fa-android';
+            if (bannerTitle) bannerTitle.textContent = 'Descargar App para Android';
+            if (bannerDesc) bannerDesc.textContent = 'Instala LETY LOOK en tu celular';
+            if (bannerBtnText) bannerBtnText.textContent = 'Instalar';
+
+            if (accIcon) accIcon.className = 'fa-brands fa-android';
+            if (accTitle) accTitle.textContent = 'Instala LETY LOOK en tu Android';
+            if (accSubtitle) accSubtitle.textContent = 'Acceso directo en tu teléfono como App nativa';
+            if (accBtnText) accBtnText.textContent = 'Instalar';
+        } else {
+            // Universal / Desktop UI
+            if (bannerTitle) bannerTitle.textContent = 'Instalar App en tu Celular';
+            if (bannerDesc) bannerDesc.textContent = 'Disponible para iPhone y Android';
+            if (accTitle) accTitle.textContent = 'Instala la App en tu Celular';
+        }
+    }
+
+    setupInstallUI();
 
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        if (installBanner) installBanner.style.display = 'flex';
+        const currentClient = window.dataManager?.getCurrentClient?.();
+        if (!currentClient && !isStandalone) {
+            if (topInstallBanner) topInstallBanner.style.display = 'flex';
+            if (accountInstallPrompt) accountInstallPrompt.style.display = 'flex';
+        }
     });
 
-    async function triggerApkInstall() {
-        if (deferredPrompt) {
+    function openInstallGuideModal() {
+        const modal = document.getElementById('modal-install-instructions');
+        const modalIcon = document.getElementById('modal-install-icon');
+        const modalIconWrap = document.getElementById('modal-install-icon-wrap');
+        const modalTitle = document.getElementById('modal-install-title');
+        const modalSubtitle = document.getElementById('modal-install-subtitle');
+        const modalSteps = document.getElementById('modal-install-steps');
+
+        if (!modal) return;
+
+        if (isIOS) {
+            if (modalIcon) modalIcon.className = 'fa-brands fa-apple';
+            if (modalIconWrap) {
+                modalIconWrap.style.background = '#18181b';
+                modalIconWrap.style.color = '#fff';
+            }
+            if (modalTitle) modalTitle.textContent = 'Instalar en tu iPhone';
+            if (modalSubtitle) modalSubtitle.innerHTML = 'Agrega <strong>LETY LOOK</strong> a tu pantalla de inicio en <strong>Safari</strong>:';
+            if (modalSteps) {
+                modalSteps.innerHTML = `
+                    <div style="display:flex; align-items:flex-start; gap:0.65rem;">
+                        <span style="background:var(--primary); color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0;">1</span>
+                        <div>Abre esta página en el navegador <strong>Safari</strong> de tu iPhone.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:0.65rem;">
+                        <span style="background:var(--primary); color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0;">2</span>
+                        <div>Toca el botón <strong>Compartir</strong> <i class="fa-solid fa-arrow-up-from-bracket" style="color:var(--primary); margin:0 3px;"></i> en la barra de Safari.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:0.65rem;">
+                        <span style="background:var(--primary); color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0;">3</span>
+                        <div>Desliza hacia abajo y selecciona <strong>"Agregar a pantalla de inicio"</strong> <i class="fa-regular fa-square-plus" style="color:var(--primary); margin:0 3px;"></i>.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:0.65rem;">
+                        <span style="background:var(--primary); color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0;">4</span>
+                        <div>Toca <strong>"Agregar"</strong> arriba a la derecha. ¡Listo! Tendrás la app en tu iPhone.</div>
+                    </div>
+                `;
+            }
+        } else {
+            if (modalIcon) modalIcon.className = 'fa-brands fa-android';
+            if (modalIconWrap) {
+                modalIconWrap.style.background = '#dcfce7';
+                modalIconWrap.style.color = '#15803d';
+            }
+            if (modalTitle) modalTitle.textContent = 'Instalar App en Android';
+            if (modalSubtitle) modalSubtitle.innerHTML = 'Para instalar la app de <strong>LETY LOOK</strong> directamente en tu celular:';
+            if (modalSteps) {
+                modalSteps.innerHTML = `
+                    <div style="display:flex; align-items:flex-start; gap:0.65rem;">
+                        <span style="background:#059669; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0;">1</span>
+                        <div>Toca los <strong>3 puntos (⋮)</strong> en la esquina superior derecha de Google Chrome.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:0.65rem;">
+                        <span style="background:#059669; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0;">2</span>
+                        <div>Selecciona <strong>"Instalar aplicación"</strong> o <strong>"Agregar a pantalla principal"</strong>.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:0.65rem;">
+                        <span style="background:#059669; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0;">3</span>
+                        <div>¡Listo! Se abrirá como App nativa en tu teléfono.</div>
+                    </div>
+                `;
+            }
+        }
+        modal.style.display = 'flex';
+    }
+
+    async function triggerInstallFlow() {
+        if (!isIOS && deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             if (outcome === 'accepted') {
-                if (installBanner) installBanner.style.display = 'none';
+                if (topInstallBanner) topInstallBanner.style.display = 'none';
+                if (accountInstallPrompt) accountInstallPrompt.style.display = 'none';
             }
             deferredPrompt = null;
         } else {
-            if (apkModal) apkModal.style.display = 'flex';
+            openInstallGuideModal();
         }
     }
 
-    installBtn?.addEventListener('click', triggerApkInstall);
-    profileInstallBtn?.addEventListener('click', triggerApkInstall);
+    topInstallBtn?.addEventListener('click', triggerInstallFlow);
+    accountInstallBtn?.addEventListener('click', triggerInstallFlow);
 
-    closeApkModalBtn?.addEventListener('click', () => {
-        if (apkModal) apkModal.style.display = 'none';
+    closeInstallModalBtn?.addEventListener('click', () => {
+        if (installModal) installModal.style.display = 'none';
     });
 
     // Force App Refresh & Cache Clearer
@@ -156,6 +295,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (navAccountLabel) navAccountLabel.textContent = 'Cuenta';
             if (heroGreeting) heroGreeting.textContent = 'Resalta tu Belleza con los Mejores Expertos';
+        }
+
+        // Install banners visibility: HIDE when logged in, ONLY show when not logged in
+        const bannerEl = document.getElementById('client-install-banner');
+        const accPromptEl = document.getElementById('account-unauth-install-prompt');
+
+        if (currentClient) {
+            // Logged in: Hide all install prompts everywhere
+            if (bannerEl) bannerEl.style.display = 'none';
+            if (accPromptEl) accPromptEl.style.display = 'none';
+        } else {
+            // Unauthenticated (guest / about to log in): Show if not already installed as standalone
+            if (!isStandalone) {
+                if (bannerEl) bannerEl.style.display = 'flex';
+                if (accPromptEl) accPromptEl.style.display = 'flex';
+            } else {
+                if (bannerEl) bannerEl.style.display = 'none';
+                if (accPromptEl) accPromptEl.style.display = 'none';
+            }
         }
     }
 
