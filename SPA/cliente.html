@@ -24,7 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js?v=17.0"></script>
     <!-- Client App Stylesheet -->
-    <link rel="stylesheet" href="css/client-app.css?v=23.0">
+    <link rel="stylesheet" href="css/client-app.css?v=24.0">
 </head>
 <body>
     <div class="mobile-app-container">
@@ -600,79 +600,84 @@
                 </div>
             </div>
         </section>
+    </div> <!-- Close .mobile-app-container so modals are direct children of body -->
 
-        <!-- Modal: Editar Datos Personales del Cliente -->
-        <div id="modal-client-edit-profile" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
-            <div style="background:var(--bg-surface, #fff); border-radius:var(--radius-lg); padding:1.75rem 1.4rem; max-width:420px; width:100%; box-shadow:0 15px 40px rgba(0,0,0,0.4); border:1px solid var(--border-color); text-align:left;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
-                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                        <i class="fa-solid fa-user-pen" style="color:var(--primary); font-size:1.2rem;"></i>
-                        <h3 style="font-family:'Playfair Display', serif; font-size:1.25rem; color:var(--text-main); margin:0;">Editar Mi Perfil</h3>
-                    </div>
-                    <button id="btn-close-edit-profile-modal" type="button" style="background:none; border:none; font-size:1.3rem; color:var(--text-secondary); cursor:pointer;">&times;</button>
+    <!-- ======================================================================
+         MODALS (Direct children of body to avoid fixed positioning bugs)
+         ====================================================================== -->
+
+    <!-- Modal: Editar Datos Personales del Cliente -->
+    <div id="modal-client-edit-profile" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
+        <div style="background:var(--bg-surface, #fff); border-radius:var(--radius-lg); padding:1.75rem 1.4rem; max-width:420px; width:100%; box-shadow:0 15px 40px rgba(0,0,0,0.4); border:1px solid var(--border-color); text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <i class="fa-solid fa-user-pen" style="color:var(--primary); font-size:1.2rem;"></i>
+                    <h3 style="font-family:'Playfair Display', serif; font-size:1.25rem; color:var(--text-main); margin:0;">Editar Mi Perfil</h3>
                 </div>
-                <form id="form-client-edit-profile">
-                    <div class="client-form-group">
-                        <label for="edit-profile-name">Nombre Completo *</label>
-                        <input type="text" id="edit-profile-name" class="client-form-input" required placeholder="Tu nombre">
-                    </div>
-                    <div class="client-form-group">
-                        <label for="edit-profile-phone">WhatsApp / Celular *</label>
-                        <input type="tel" id="edit-profile-phone" class="client-form-input" required placeholder="Ej: 3138869676">
-                    </div>
-                    <div class="client-form-group">
-                        <label for="edit-profile-email">Correo Electrónico *</label>
-                        <input type="email" id="edit-profile-email" class="client-form-input" required placeholder="correo@ejemplo.com">
-                    </div>
-                    <div class="client-form-group">
-                        <label for="edit-profile-password">Nueva Contraseña (Opcional)</label>
-                        <input type="password" id="edit-profile-password" class="client-form-input" placeholder="Dejar en blanco para conservar la actual">
-                    </div>
-                    <div style="background:var(--bg-subtle, #f9fafb); padding:0.65rem 0.8rem; border-radius:var(--radius-sm); font-size:0.75rem; color:var(--text-secondary); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
-                        <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i>
-                        <span>Tus datos se guardan de forma permanente y segura.</span>
-                    </div>
-                    <div style="display:flex; gap:0.75rem;">
-                        <button type="button" id="btn-cancel-edit-profile" class="btn-book-service" style="flex:1; justify-content:center; padding:0.75rem; background:none; border:1px solid var(--border-color); color:var(--text-secondary);">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="btn-hero-book" style="flex:2; justify-content:center; padding:0.75rem;">
-                            <span>Guardar Cambios</span>
-                            <i class="fa-solid fa-floppy-disk"></i>
-                        </button>
-                    </div>
-                </form>
+                <button id="btn-close-edit-profile-modal" type="button" style="background:none; border:none; font-size:1.3rem; color:var(--text-secondary); cursor:pointer;">&times;</button>
             </div>
+            <form id="form-client-edit-profile">
+                <div class="client-form-group">
+                    <label for="edit-profile-name">Nombre Completo *</label>
+                    <input type="text" id="edit-profile-name" class="client-form-input" required placeholder="Tu nombre">
+                </div>
+                <div class="client-form-group">
+                    <label for="edit-profile-phone">WhatsApp / Celular *</label>
+                    <input type="tel" id="edit-profile-phone" class="client-form-input" required placeholder="Ej: 3138869676">
+                </div>
+                <div class="client-form-group">
+                    <label for="edit-profile-email">Correo Electrónico *</label>
+                    <input type="email" id="edit-profile-email" class="client-form-input" required placeholder="correo@ejemplo.com">
+                </div>
+                <div class="client-form-group">
+                    <label for="edit-profile-password">Nueva Contraseña (Opcional)</label>
+                    <input type="password" id="edit-profile-password" class="client-form-input" placeholder="Dejar en blanco para conservar la actual">
+                </div>
+                <div style="background:var(--bg-subtle, #f9fafb); padding:0.65rem 0.8rem; border-radius:var(--radius-sm); font-size:0.75rem; color:var(--text-secondary); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i>
+                    <span>Tus datos se guardan de forma permanente y segura.</span>
+                </div>
+                <div style="display:flex; gap:0.75rem;">
+                    <button type="button" id="btn-cancel-edit-profile" class="btn-book-service" style="flex:1; justify-content:center; padding:0.75rem; background:none; border:1px solid var(--border-color); color:var(--text-secondary);">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-hero-book" style="flex:2; justify-content:center; padding:0.75rem;">
+                        <span>Guardar Cambios</span>
+                        <i class="fa-solid fa-floppy-disk"></i>
+                    </button>
+                </div>
+            </form>
         </div>
+    </div> <!-- Close modal-client-edit-profile -->
 
-        <!-- Dynamic Smart App Installation Instructions Modal (iOS & Android) -->
-        <div id="modal-install-instructions" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
-            <div style="background:var(--bg-surface, #fff); border-radius:var(--radius-lg); padding:1.75rem 1.4rem; max-width:390px; width:100%; box-shadow:0 15px 40px rgba(0,0,0,0.4); text-align:center; border:1px solid var(--border-color);">
-                <div id="modal-install-icon-wrap" style="width:58px; height:58px; border-radius:50%; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.9rem; margin:0 auto 1rem;">
-                    <i id="modal-install-icon" class="fa-brands fa-android"></i>
-                </div>
-                <h3 id="modal-install-title" style="font-family:'Playfair Display', serif; font-size:1.3rem; margin-bottom:0.4rem; color:var(--text-main);">Instalar Aplicación</h3>
-                <p id="modal-install-subtitle" style="font-size:0.83rem; color:var(--text-secondary); line-height:1.4; margin-bottom:1.25rem;">
-                    Instala <strong>LETY LOOK</strong> en tu celular para tener acceso directo y reservar tus citas en segundos:
-                </p>
-                
-                <div id="modal-install-steps" style="text-align:left; background:var(--bg-subtle); padding:0.95rem 1rem; border-radius:var(--radius-md); font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.25rem; display:flex; flex-direction:column; gap:0.65rem; border:1px solid var(--border-color);">
-                    <!-- Dynamic steps inserted via JS -->
-                </div>
-
-                <button id="btn-close-install-modal" type="button" class="btn-hero-book" style="width:100%; justify-content:center; padding:0.8rem; font-size:0.9rem;">
-                    ¡Entendido!
-                </button>
+    <!-- Dynamic Smart App Installation Instructions Modal (iOS & Android) -->
+    <div id="modal-install-instructions" class="client-modal" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; height:100dvh; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999999; align-items:center; justify-content:center; padding:1.25rem; box-sizing:border-box;">
+        <div style="background:var(--bg-surface, #fff); color:var(--text-main); border-radius:var(--radius-lg); padding:1.75rem 1.4rem; max-width:390px; width:100%; box-shadow:0 15px 40px rgba(0,0,0,0.5); text-align:center; border:1px solid var(--border-color); margin:auto;">
+            <div id="modal-install-icon-wrap" style="width:58px; height:58px; border-radius:50%; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.9rem; margin:0 auto 1rem;">
+                <i id="modal-install-icon" class="fa-brands fa-android"></i>
             </div>
-        </div>
+            <h3 id="modal-install-title" style="font-family:'Playfair Display', serif; font-size:1.3rem; margin-bottom:0.4rem; color:var(--text-main);">Instalar Aplicación</h3>
+            <p id="modal-install-subtitle" style="font-size:0.83rem; color:var(--text-secondary); line-height:1.4; margin-bottom:1.25rem;">
+                Instala <strong>LETY LOOK</strong> en tu celular para tener acceso directo y reservar tus citas en segundos:
+            </p>
+            
+            <div id="modal-install-steps" style="text-align:left; background:var(--bg-subtle); padding:0.95rem 1rem; border-radius:var(--radius-md); font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.25rem; display:flex; flex-direction:column; gap:0.65rem; border:1px solid var(--border-color);">
+                <!-- Dynamic steps inserted via JS -->
+            </div>
 
-        <!-- ======================================================================
-             MODAL: CANASTA DE PRODUCTOS & CHECKOUT
-             ====================================================================== -->
-        <div id="modal-client-cart" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:flex-end; justify-content:center; padding:0;">
-            <div style="background:var(--bg-surface, #fff); border-top-left-radius:var(--radius-lg); border-top-right-radius:var(--radius-lg); padding:1.4rem 1.25rem 2rem; max-width:460px; width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 -10px 40px rgba(0,0,0,0.3); border:1px solid var(--border-color); text-align:left;">
-                
-                <!-- Cart Modal Header -->
+            <button id="btn-close-install-modal" type="button" class="btn-hero-book" style="width:100%; justify-content:center; padding:0.8rem; font-size:0.9rem;">
+                ¡Entendido!
+            </button>
+        </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL: CANASTA DE PRODUCTOS & CHECKOUT
+         ====================================================================== -->
+    <div id="modal-client-cart" class="client-modal" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; height:100dvh; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999999; align-items:flex-end; justify-content:center; padding:0; box-sizing:border-box;" onclick="if(event.target === this) window.closeCartModal();">
+        <div style="background:var(--bg-surface, #fff); color:var(--text-main); border-top-left-radius:var(--radius-lg); border-top-right-radius:var(--radius-lg); padding:1.4rem 1.25rem 2rem; max-width:440px; width:100%; max-height:85vh; max-height:85dvh; overflow-y:auto; box-shadow:0 -10px 40px rgba(0,0,0,0.5); border:1px solid var(--border-color); text-align:left; margin:0 auto; position:relative; z-index:10000000;">
+            
+            <!-- Cart Modal Header -->
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem;">
                     <div style="display:flex; align-items:center; gap:0.6rem;">
                         <div style="width:36px; height:36px; border-radius:50%; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
@@ -687,7 +692,7 @@
                         <button id="btn-clear-cart" type="button" style="background:none; border:none; color:#ef4444; font-size:0.75rem; font-weight:700; cursor:pointer; display:none;">
                             <i class="fa-solid fa-trash-can"></i> Vaciar
                         </button>
-                        <button id="btn-close-cart-modal" type="button" style="background:none; border:none; font-size:1.4rem; color:var(--text-secondary); cursor:pointer; padding:0.25rem;">&times;</button>
+                        <button id="btn-close-cart-modal" type="button" onclick="window.closeCartModal();" style="background:none; border:none; font-size:1.4rem; color:var(--text-secondary); cursor:pointer; padding:0.25rem;" title="Cerrar Canasta">&times;</button>
                     </div>
                 </div>
 
@@ -831,11 +836,9 @@
             </div>
         </div>
 
-    </div>
-
     <!-- Scripts -->
-    <script src="js/data.js?v=23.0"></script>
-    <script src="js/client-app.js?v=23.0"></script>
+    <script src="js/data.js?v=24.0"></script>
+    <script src="js/client-app.js?v=24.0"></script>
 </body>
 </html>
 

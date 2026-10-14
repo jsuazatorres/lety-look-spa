@@ -1085,7 +1085,7 @@
                 </div>
                 <button class="modal-close-btn" data-close-modal="modal-shop-product"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form id="form-shop-product" novalidate onsubmit="if (window.saveShopProductFromModal) { window.saveShopProductFromModal(event); } return false;">
+            <form id="form-shop-product" novalidate onsubmit="event.preventDefault(); if (window.saveShopProductFromModal) { window.saveShopProductFromModal(event); } return false;">
                 <input type="hidden" id="shop-prod-form-id">
                 <div class="modal-body">
                     <div class="form-grid">
@@ -1136,7 +1136,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" data-close-modal="modal-shop-product">Cancelar</button>
-                    <button type="button" class="btn-primary" id="btn-save-shop-product" onclick="if (window.saveShopProductFromModal) { window.saveShopProductFromModal(event); }" style="background:linear-gradient(135deg, #f59e0b, #d97706); border-color:#d97706;">
+                    <button type="submit" class="btn-primary" id="btn-save-shop-product" onclick="if (window.saveShopProductFromModal) { window.saveShopProductFromModal(event); }" style="background:linear-gradient(135deg, #f59e0b, #d97706); border-color:#d97706;">
                         <i class="fa-solid fa-floppy-disk"></i>
                         <span>Guardar Producto</span>
                     </button>
@@ -1149,7 +1149,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=23.0"></script>
-    <script src="js/app.js?v=23.0"></script>
+    <script src="js/data.js?v=24.0"></script>
+    <script src="js/app.js?v=24.0"></script>
 </body>
 </html>
