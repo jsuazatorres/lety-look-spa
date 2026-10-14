@@ -1655,18 +1655,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    let shopProducts = JSON.parse(localStorage.getItem('lety_look_shop_products')) || DEFAULT_SHOP_PRODUCTS;
+    function getAdminShopProducts() {
+        if (window.dataManager && typeof window.dataManager.getShopProducts === 'function') {
+            return window.dataManager.getShopProducts();
+        }
+        return JSON.parse(localStorage.getItem('lety_look_shop_products')) || DEFAULT_SHOP_PRODUCTS;
+    }
 
     function renderShopAdminView() {
         const tbody = document.getElementById('shop-products-table-body');
         if (!tbody) return;
         tbody.innerHTML = '';
 
+        const shopProducts = getAdminShopProducts();
         let totalUnits = 0;
+
         shopProducts.forEach(p => {
-            totalUnits += (p.stock || 0);
+            const stock = Number(p.stock !== undefined ? p.stock : 0);
+            totalUnits += stock;
             const tr = document.createElement('tr');
             const margin = Math.round(((p.salePrice - p.costPrice) / p.salePrice) * 100);
+            const isLowStock = stock <= 3;
+            const isOutOfStock = stock <= 0;
 
             tr.innerHTML = `
                 <td>
@@ -1684,7 +1694,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>
                     <div style="display:flex; align-items:center; gap:0.4rem;">
                         <button class="btn-icon btn-qty-minus" data-id="${p.id}" style="width:26px; height:26px; font-size:0.75rem;" title="Disminuir stock">-</button>
-                        <span style="font-weight:800; font-size:0.95rem; min-width:24px; text-align:center;">${p.stock}</span>
+                        <span style="font-weight:800; font-size:0.95rem; min-width:24px; text-align:center; ${isOutOfStock ? 'color:#ef4444;' : isLowStock ? 'color:#d97706;' : ''}">${stock}</span>
                         <button class="btn-icon btn-qty-plus" data-id="${p.id}" style="width:26px; height:26px; font-size:0.75rem;" title="Aumentar stock">+</button>
                         <span style="font-size:0.75rem; color:var(--text-muted);">uds</span>
                     </div>
@@ -1697,17 +1707,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-size:0.72rem; color:#15803d; font-weight:700;">Margen: ${margin}%</div>
                 </td>
                 <td>
-                    <span class="status-badge status-confirmed" style="font-weight:800;">
-                        <i class="fa-solid fa-check"></i> Disponible (${p.stock})
-                    </span>
+                    ${isOutOfStock 
+                        ? `<span class="status-badge" style="background:#fee2e2; color:#b91c1c; font-weight:800;"><i class="fa-solid fa-circle-xmark"></i> Agotado</span>`
+                        : isLowStock 
+                        ? `<span class="status-badge" style="background:#fef3c7; color:#b45309; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> Bajo Stock (${stock})</span>`
+                        : `<span class="status-badge status-confirmed" style="font-weight:800;"><i class="fa-solid fa-check"></i> Disponible (${stock})</span>`
+                    }
                 </td>
                 <td style="text-align: right;">
                     <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
-                        <button class="btn-icon btn-shop-edit-price" data-id="${p.id}" title="Ajustar Precio de Venta">
+                        <button class="btn-icon btn-shop-edit-full" data-id="${p.id}" title="Editar Producto (Nombre, Categoría, Stock, Precios, Foto)">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button class="btn-icon btn-shop-edit-price" data-id="${p.id}" title="Ajustar Precio Rápido">
                             <i class="fa-solid fa-dollar-sign"></i>
                         </button>
-                        <button class="btn-icon btn-shop-edit-stock" data-id="${p.id}" title="Modificar Cantidad / Inventario">
+                        <button class="btn-icon btn-shop-edit-stock" data-id="${p.id}" title="Modificar Stock Rápido">
                             <i class="fa-solid fa-boxes-stacked"></i>
+                        </button>
+                        <button class="btn-icon btn-shop-delete-prod" data-id="${p.id}" title="Eliminar Producto del Catálogo" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">
+                            <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
                 </td>
@@ -1718,14 +1737,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const countEl = document.getElementById('shop-kpi-products-count');
         if (countEl) countEl.textContent = `${shopProducts.length} Referencias`;
 
+        // Full Product Edit Modal Listener
+        tbody.querySelectorAll('.btn-shop-edit-full').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                openShopProductModal(id);
+            });
+        });
+
+        // Delete Product Listener
+        tbody.querySelectorAll('.btn-shop-delete-prod').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const products = getAdminShopProducts();
+                const prod = products.find(p => p.id === id);
+                if (prod) {
+                    if (confirm(`¿Estás segura de que deseas eliminar el producto "${prod.name}" del catálogo de la tienda? Esta acción no se puede deshacer.`)) {
+                        if (window.dataManager && typeof window.dataManager.deleteShopProduct === 'function') {
+                            window.dataManager.deleteShopProduct(id);
+                        } else {
+                            const updated = products.filter(p => p.id !== id);
+                            localStorage.setItem('lety_look_shop_products', JSON.stringify(updated));
+                        }
+                        renderShopAdminView();
+                        showToast(`Producto "${prod.name}" eliminado del catálogo`, 'info');
+                    }
+                }
+            });
+        });
+
         // Quantity Plus/Minus listeners
         tbody.querySelectorAll('.btn-qty-plus').forEach(b => {
             b.addEventListener('click', () => {
                 const id = b.getAttribute('data-id');
-                const prod = shopProducts.find(p => p.id === id);
+                const products = getAdminShopProducts();
+                const prod = products.find(p => p.id === id);
                 if (prod) {
-                    prod.stock += 1;
-                    localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                    prod.stock = (Number(prod.stock) || 0) + 1;
+                    if (window.dataManager && typeof window.dataManager.saveShopProducts === 'function') {
+                        window.dataManager.saveShopProducts(products);
+                    } else {
+                        localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
+                    }
                     renderShopAdminView();
                     showToast(`Stock de "${prod.name}" aumentado a ${prod.stock} uds`, 'success');
                 }
@@ -1735,10 +1788,15 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.querySelectorAll('.btn-qty-minus').forEach(b => {
             b.addEventListener('click', () => {
                 const id = b.getAttribute('data-id');
-                const prod = shopProducts.find(p => p.id === id);
+                const products = getAdminShopProducts();
+                const prod = products.find(p => p.id === id);
                 if (prod && prod.stock > 0) {
-                    prod.stock -= 1;
-                    localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                    prod.stock = (Number(prod.stock) || 0) - 1;
+                    if (window.dataManager && typeof window.dataManager.saveShopProducts === 'function') {
+                        window.dataManager.saveShopProducts(products);
+                    } else {
+                        localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
+                    }
                     renderShopAdminView();
                     showToast(`Stock de "${prod.name}" ajustado a ${prod.stock} uds`, 'info');
                 }
@@ -1749,12 +1807,17 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.querySelectorAll('.btn-shop-edit-price').forEach(b => {
             b.addEventListener('click', () => {
                 const id = b.getAttribute('data-id');
-                const prod = shopProducts.find(p => p.id === id);
+                const products = getAdminShopProducts();
+                const prod = products.find(p => p.id === id);
                 if (prod) {
                     const newPrice = prompt(`Ajustar precio de venta para:\n"${prod.name}"\n\nPrecio actual: $${prod.salePrice.toLocaleString('es-CO')}\nIngresa el nuevo precio (solo números):`, prod.salePrice);
                     if (newPrice && !isNaN(newPrice) && Number(newPrice) > 0) {
                         prod.salePrice = Number(newPrice);
-                        localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                        if (window.dataManager && typeof window.dataManager.saveShopProducts === 'function') {
+                            window.dataManager.saveShopProducts(products);
+                        } else {
+                            localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
+                        }
                         renderShopAdminView();
                         showToast(`Precio de venta de "${prod.name}" actualizado a ${formatCurrency(prod.salePrice)}`, 'success');
                     }
@@ -1766,17 +1829,164 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.querySelectorAll('.btn-shop-edit-stock').forEach(b => {
             b.addEventListener('click', () => {
                 const id = b.getAttribute('data-id');
-                const prod = shopProducts.find(p => p.id === id);
+                const products = getAdminShopProducts();
+                const prod = products.find(p => p.id === id);
                 if (prod) {
                     const newStock = prompt(`Ajustar cantidad en inventario para:\n"${prod.name}"\n\nCantidad actual: ${prod.stock} unidades\nIngresa la nueva cantidad:`, prod.stock);
                     if (newStock !== null && !isNaN(newStock) && Number(newStock) >= 0) {
                         prod.stock = Number(newStock);
-                        localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                        if (window.dataManager && typeof window.dataManager.saveShopProducts === 'function') {
+                            window.dataManager.saveShopProducts(products);
+                        } else {
+                            localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
+                        }
                         renderShopAdminView();
                         showToast(`Inventario de "${prod.name}" fijado en ${prod.stock} uds`, 'success');
                     }
                 }
             });
+        });
+
+        renderShopOrdersView();
+    }
+
+    // Modal Manager: Open & Edit Shop Products
+    function openShopProductModal(productId = null) {
+        const modalTitle = document.getElementById('modal-shop-product-title');
+        const form = document.getElementById('form-shop-product');
+        if (!form) return;
+
+        form.reset();
+
+        const inputId = document.getElementById('shop-prod-form-id');
+        const inputName = document.getElementById('shop-prod-name');
+        const inputCategory = document.getElementById('shop-prod-category');
+        const inputStock = document.getElementById('shop-prod-stock');
+        const inputCost = document.getElementById('shop-prod-cost');
+        const inputPrice = document.getElementById('shop-prod-price');
+        const inputDesc = document.getElementById('shop-prod-desc');
+        const inputImg = document.getElementById('shop-prod-img');
+
+        if (productId) {
+            const products = getAdminShopProducts();
+            const prod = products.find(p => p.id === productId);
+            if (prod) {
+                if (modalTitle) modalTitle.textContent = `Editar: ${prod.name}`;
+                if (inputId) inputId.value = prod.id;
+                if (inputName) inputName.value = prod.name || '';
+                if (inputCategory) inputCategory.value = prod.category || 'Capilar';
+                if (inputStock) inputStock.value = prod.stock !== undefined ? prod.stock : 10;
+                if (inputCost) inputCost.value = prod.costPrice || 0;
+                if (inputPrice) inputPrice.value = prod.salePrice || 0;
+                if (inputDesc) inputDesc.value = prod.desc || '';
+                if (inputImg) inputImg.value = prod.img || '';
+            }
+        } else {
+            if (modalTitle) modalTitle.textContent = 'Nuevo Producto para la Tienda';
+            if (inputId) inputId.value = '';
+            if (inputStock) inputStock.value = 10;
+            if (inputCategory) inputCategory.value = 'Capilar';
+        }
+
+        updateShopModalMargin();
+        openModal('modal-shop-product');
+    }
+
+    function updateShopModalMargin() {
+        const cost = Number(document.getElementById('shop-prod-cost')?.value) || 0;
+        const price = Number(document.getElementById('shop-prod-price')?.value) || 0;
+        const marginText = document.getElementById('shop-prod-margin-text');
+        if (!marginText) return;
+
+        if (price > 0) {
+            const margin = price - cost;
+            const percent = Math.round((margin / price) * 100);
+            marginText.textContent = `${formatCurrency(margin)} (${percent}% de margen)`;
+            marginText.style.color = margin >= 0 ? '#15803d' : '#ef4444';
+        } else {
+            marginText.textContent = '$0 (0% de margen)';
+            marginText.style.color = '#15803d';
+        }
+    }
+
+    // Render Orders in Admin Panel
+    function renderShopOrdersView() {
+        const tbody = document.getElementById('shop-orders-table-body');
+        const ordersBadge = document.getElementById('shop-tab-orders-label');
+        const kpiOrdersCount = document.getElementById('shop-kpi-orders-count');
+
+        const orders = (window.dataManager && typeof window.dataManager.getShopOrders === 'function')
+            ? window.dataManager.getShopOrders()
+            : (JSON.parse(localStorage.getItem('lety_look_orders')) || []);
+
+        if (ordersBadge) ordersBadge.textContent = `Pedidos de Clientes (${orders.length})`;
+        if (kpiOrdersCount) kpiOrdersCount.textContent = `${orders.length} ${orders.length === 1 ? 'Efectuado' : 'Efectuados'}`;
+
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (orders.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+                        <div style="font-size:1.8rem; margin-bottom:0.4rem; opacity:0.4;"><i class="fa-solid fa-cart-shopping"></i></div>
+                        <div style="font-weight:700; font-size:0.95rem; color:var(--text-main);">No hay pedidos registrados aún</div>
+                        <div style="font-size:0.82rem;">Cuando un cliente confirme su canasta en la App, aparecerá aquí y su stock se descontará automáticamente.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        orders.forEach(ord => {
+            const tr = document.createElement('tr');
+            const dateStr = ord.date ? new Date(ord.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Reciente';
+
+            let itemsListHtml = (ord.items || []).map(it => 
+                `<span style="display:inline-block; background:var(--bg-subtle); border:1px solid var(--border-color); padding:0.15rem 0.45rem; border-radius:4px; font-size:0.75rem; margin:0.1rem 0.2rem 0.1rem 0;">
+                    <strong>${it.qty}x</strong> ${it.name}
+                </span>`
+            ).join('');
+
+            const cleanPhone = (ord.clientPhone || '').replace(/\D/g, '');
+            const waPhone = cleanPhone.startsWith('57') ? cleanPhone : ('57' + cleanPhone);
+            const waMsg = `¡Hola ${ord.clientName}! ✨ Te escribimos de LETY LOOK SPA sobre tu pedido ${ord.orderNumber}.`;
+
+            tr.innerHTML = `
+                <td>
+                    <div style="font-weight:800; color:var(--primary); font-size:0.9rem;">${ord.orderNumber}</div>
+                    <div style="font-size:0.72rem; color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${dateStr}</div>
+                </td>
+                <td>
+                    <div style="font-weight:700; color:var(--text-main); font-size:0.88rem;">${ord.clientName}</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary);"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> ${ord.clientPhone}</div>
+                </td>
+                <td style="max-width:240px;">
+                    <div>${itemsListHtml}</div>
+                    ${ord.notes ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.2rem; font-style:italic;">Nota: "${ord.notes}"</div>` : ''}
+                </td>
+                <td>
+                    ${ord.deliveryType === 'pickup' 
+                        ? `<span class="status-badge" style="background:#f1f5f9; color:#475569; font-weight:700;"><i class="fa-solid fa-store"></i> En Spa</span>`
+                        : `<span class="status-badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;" title="${ord.deliveryAddress || ''}"><i class="fa-solid fa-truck"></i> Domicilio</span>`
+                    }
+                </td>
+                <td>
+                    <div style="font-weight:800; font-size:0.95rem; color:var(--primary);">${formatCurrency(ord.total)}</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${ord.paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo'}</div>
+                </td>
+                <td>
+                    <span class="status-badge status-confirmed" style="font-weight:800;">
+                        <i class="fa-solid fa-circle-check"></i> Pagado
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <a href="https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn-icon" title="Contactar por WhatsApp" style="color:#25d366; border-color:#25d366; display:inline-flex;">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </a>
+                </td>
+            `;
+            tbody.appendChild(tr);
         });
     }
 
@@ -1812,38 +2022,132 @@ document.addEventListener('DOMContentLoaded', () => {
             if (panel) panel.style.display = 'block';
         }
 
-        btnProducts?.addEventListener('click', () => activateTab(btnProducts, panelProducts));
-        btnOrders?.addEventListener('click', () => activateTab(btnOrders, panelOrders));
+        btnProducts?.addEventListener('click', () => {
+            activateTab(btnProducts, panelProducts);
+            renderShopAdminView();
+        });
+
+        btnOrders?.addEventListener('click', () => {
+            activateTab(btnOrders, panelOrders);
+            renderShopOrdersView();
+        });
+
         btnPricing?.addEventListener('click', () => activateTab(btnPricing, panelPricing));
 
-        document.getElementById('btn-shop-preview-add')?.addEventListener('click', () => {
-            const name = prompt('Nombre del nuevo producto para agregar a la tienda demo:', 'Kit Spa Cuidado Capilar');
-            if (name) {
-                const newProd = {
-                    id: 'prod-' + Date.now(),
-                    name: name.trim(),
-                    category: 'Belleza',
-                    stock: 10,
-                    costPrice: 20000,
-                    salePrice: 35000,
-                    status: 'ok',
-                    img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=150&q=80'
-                };
-                shopProducts.push(newProd);
-                localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
-                renderShopAdminView();
-                showToast(`Producto "${newProd.name}" agregado con éxito al catálogo demo`, 'success');
+        document.getElementById('btn-refresh-shop-orders')?.addEventListener('click', () => {
+            renderShopOrdersView();
+            renderShopAdminView();
+            showToast('Pedidos e inventario actualizados', 'info');
+        });
+
+        // Open Add Product Modal button
+        document.getElementById('btn-shop-open-create-modal')?.addEventListener('click', () => {
+            openShopProductModal(null);
+        });
+
+        // Realtime margin calculator when typing cost or price
+        document.getElementById('shop-prod-cost')?.addEventListener('input', updateShopModalMargin);
+        document.getElementById('shop-prod-price')?.addEventListener('input', updateShopModalMargin);
+
+        // Submit Add/Edit Product Form
+        document.getElementById('form-shop-product')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('shop-prod-form-id')?.value.trim() || null;
+            const name = document.getElementById('shop-prod-name')?.value.trim();
+            const category = document.getElementById('shop-prod-category')?.value || 'Capilar';
+            const stock = Math.max(0, parseInt(document.getElementById('shop-prod-stock')?.value, 10) || 0);
+            const costPrice = Math.max(0, parseFloat(document.getElementById('shop-prod-cost')?.value) || 0);
+            const salePrice = Math.max(0, parseFloat(document.getElementById('shop-prod-price')?.value) || 0);
+            const desc = document.getElementById('shop-prod-desc')?.value.trim() || '';
+            let img = document.getElementById('shop-prod-img')?.value.trim() || '';
+
+            if (!name) {
+                alert('Por favor ingresa el nombre del producto.');
+                return;
             }
+
+            if (salePrice <= 0) {
+                alert('El precio de venta debe ser superior a $0.');
+                return;
+            }
+
+            // High quality category fallback images if no photo URL provided
+            if (!img) {
+                const categoryImages = {
+                    'Capilar': 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=300&q=80',
+                    'Uñas & Kapping': 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=300&q=80',
+                    'Cuidado Corporal': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=300&q=80',
+                    'Facial & Spa': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=300&q=80',
+                    'Accesorios': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=300&q=80'
+                };
+                img = categoryImages[category] || 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=300&q=80';
+            }
+
+            const productData = {
+                name,
+                category,
+                stock,
+                costPrice,
+                salePrice,
+                desc,
+                img,
+                status: stock > 0 ? 'ok' : 'out_of_stock'
+            };
+            if (id) {
+                productData.id = id;
+            }
+
+            if (window.dataManager && typeof window.dataManager.saveShopProduct === 'function') {
+                window.dataManager.saveShopProduct(productData);
+            } else {
+                const products = getAdminShopProducts();
+                if (id) {
+                    const idx = products.findIndex(p => p.id === id);
+                    if (idx !== -1) products[idx] = { ...products[idx], ...productData };
+                    else products.push(productData);
+                } else {
+                    productData.id = 'prod-' + Date.now();
+                    products.push(productData);
+                }
+                localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
+            }
+
+            closeModal('modal-shop-product');
+            renderShopAdminView();
+            showToast(`Producto "${name}" ${id ? 'actualizado' : 'agregado'} exitosamente al catálogo`, 'success');
+        });
+
+        // Fallback for preview add button if clicked
+        document.getElementById('btn-shop-preview-add')?.addEventListener('click', () => {
+            openShopProductModal(null);
         });
 
         document.getElementById('btn-apply-mass-price')?.addEventListener('click', () => {
             const percent = Number(document.getElementById('input-mass-price-adj')?.value) || 5;
-            shopProducts.forEach(p => {
+            const products = getAdminShopProducts();
+            products.forEach(p => {
                 p.salePrice = Math.round(p.salePrice * (1 + (percent / 100)));
             });
-            localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+            if (window.dataManager && typeof window.dataManager.saveShopProducts === 'function') {
+                window.dataManager.saveShopProducts(products);
+            } else {
+                localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
+            }
             renderShopAdminView();
             showToast(`Ajuste del +${percent}% aplicado a todos los precios de venta`, 'success');
+        });
+
+        // Listen for live shop updates (e.g. from Client App tab)
+        window.addEventListener('lety_shop_updated', () => {
+            renderShopAdminView();
+            renderShopOrdersView();
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'lety_look_shop_products' || e.key === 'lety_look_orders') {
+                renderShopAdminView();
+                renderShopOrdersView();
+            }
         });
     }
     setupShopSubTabs();
@@ -1866,13 +2170,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const backupData = {
                 exportedAt: new Date().toISOString(),
-                version: '10.0',
+                version: '20.0',
                 platform: 'GitHub Pages',
                 services: window.dataManager.getServices(),
                 staff: window.dataManager.getStaff(),
                 appointments: window.dataManager.getAppointments(),
                 settings: window.dataManager.getSettings(),
-                clients: window.dataManager.getClients()
+                clients: window.dataManager.getClients(),
+                shopProducts: (window.dataManager && typeof window.dataManager.getShopProducts === 'function') ? window.dataManager.getShopProducts() : [],
+                orders: (window.dataManager && typeof window.dataManager.getShopOrders === 'function') ? window.dataManager.getShopOrders() : []
             };
 
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
@@ -1924,6 +2230,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (Array.isArray(imported.clients)) {
                         localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(imported.clients));
+                    }
+                    if (Array.isArray(imported.shopProducts)) {
+                        localStorage.setItem(STORAGE_KEYS.SHOP_PRODUCTS, JSON.stringify(imported.shopProducts));
+                    }
+                    if (Array.isArray(imported.orders)) {
+                        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(imported.orders));
                     }
 
                     showToast('¡Copia de seguridad restaurada exitosamente!');

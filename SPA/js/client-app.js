@@ -343,6 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabId === 'tab-my-appointments') renderMyAppointments();
         if (tabId === 'tab-account') renderAccountTab();
 
+        if (typeof updateCartBadgeAndFloatingBar === 'function') {
+            updateCartBadgeAndFloatingBar();
+        }
         updateAuthUI();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1367,91 +1370,125 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // BOUTIQUE & TIENDA DE PRODUCTOS (PRÓXIMAMENTE) - CLIENT CONTROLLER
+    // BOUTIQUE & TIENDA DE PRODUCTOS - PERSISTENT CART & LIVE INVENTORY
     // =========================================================================
-    const CLIENT_SHOP_CATALOG = [
-        {
-            id: 'prod-1',
-            name: 'Óleo Capilar Reparador Argán & Keratina 60ml',
-            category: 'Capilar',
-            price: 38000,
-            desc: 'Tratamiento intensivo con aceite de argán puro. Sella puntas, elimina el frizz y aporta brillo espejo sin efecto graso.',
-            img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=350&q=80'
-        },
-        {
-            id: 'prod-2',
-            name: 'Kit Kapping Gel Fortalecedor Lety Look',
-            category: 'Uñas & Kapping',
-            price: 55000,
-            desc: 'Bruma y gel fortalecedor de alta densidad para proteger uñas débiles, quebradizas o recién retiradas de acrílico.',
-            img: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=350&q=80'
-        },
-        {
-            id: 'prod-3',
-            name: 'Exfoliante Spa Hidratante Frutos Rojos 250g',
-            category: 'Cuidado Corporal',
-            price: 32000,
-            desc: 'Remueve células muertas con micropartículas naturales y manteca de karité. Deja la piel sedosa y con aroma dulce cautivador.',
-            img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=350&q=80'
-        },
-        {
-            id: 'prod-4',
-            name: 'Esmalte Semipermanente Gel UV Colección Lujo',
-            category: 'Uñas & Kapping',
-            price: 25000,
-            desc: 'Pigmentación ultra-intensa con secado en lámpara UV/LED. Acabado brillante con duración garantizada de hasta 21 días.',
-            img: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=350&q=80'
-        },
-        {
-            id: 'prod-5',
-            name: 'Serum Reparador Cutículas con Vitamina E',
-            category: 'Uñas & Kapping',
-            price: 20000,
-            desc: 'Fórmula nutritiva con aplicador en gotero. Nutre la raíz de la uña, previene padrastros y estimula el crecimiento saludable.',
-            img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=350&q=80'
-        }
-    ];
-
     let clientShopSelectedCategory = 'all';
-    let clientShopCart = {}; // { prodId: quantity }
+
+    function getStoredCart() {
+        try {
+            return JSON.parse(localStorage.getItem('lety_look_client_cart')) || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveStoredCart(cart) {
+        localStorage.setItem('lety_look_client_cart', JSON.stringify(cart));
+        updateCartBadgeAndFloatingBar();
+    }
+
+    function updateCartBadgeAndFloatingBar() {
+        const cart = getStoredCart();
+        const totalItems = cart.reduce((acc, it) => acc + (Number(it.qty) || 0), 0);
+        const totalPrice = cart.reduce((acc, it) => acc + ((Number(it.price) || 0) * (Number(it.qty) || 0)), 0);
+
+        // Header cart badge
+        const badge = document.getElementById('header-cart-badge');
+        if (badge) {
+            if (totalItems > 0) {
+                badge.textContent = totalItems > 99 ? '99+' : totalItems;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Shop banner button text
+        const bannerBtnText = document.getElementById('banner-cart-btn-text');
+        if (bannerBtnText) {
+            bannerBtnText.textContent = `Ver Mi Canasta (${totalItems})`;
+        }
+
+        // Top nav shop pill
+        const navPill = document.getElementById('nav-shop-cart-pill');
+        if (navPill) {
+            navPill.textContent = totalItems > 0 ? `${totalItems}` : 'Tienda';
+        }
+
+        // Floating bar in shop tab
+        const floatingBar = document.getElementById('client-cart-floating-bar');
+        const floatingTotal = document.getElementById('client-cart-floating-total');
+        if (floatingBar && floatingTotal) {
+            if (totalItems > 0 && clientState.currentTab === 'tab-shop') {
+                floatingTotal.textContent = `${formatCurrency(totalPrice)} (${totalItems} ${totalItems === 1 ? 'producto' : 'productos'})`;
+                floatingBar.style.display = 'flex';
+            } else {
+                floatingBar.style.display = 'none';
+            }
+        }
+    }
+
+    function getShopCatalog() {
+        if (window.dataManager && typeof window.dataManager.getShopProducts === 'function') {
+            return window.dataManager.getShopProducts();
+        }
+        return window.DEFAULT_SHOP_PRODUCTS || [];
+    }
 
     function renderShopClientTab() {
         const grid = document.getElementById('client-shop-products-grid');
         if (!grid) return;
         grid.innerHTML = '';
 
-        let items = CLIENT_SHOP_CATALOG;
+        let items = getShopCatalog();
         if (clientShopSelectedCategory !== 'all') {
             items = items.filter(p => p.category === clientShopSelectedCategory);
         }
 
+        const cart = getStoredCart();
+
         items.forEach(prod => {
             const card = document.createElement('div');
             card.className = 'shop-product-card';
-            const currentQty = clientShopCart[prod.id] || 1;
+            const price = prod.salePrice || prod.price || 0;
+            const stock = Number(prod.stock !== undefined ? prod.stock : 10);
+            const isOutOfStock = stock <= 0;
+
+            const inCartItem = cart.find(c => c.id === prod.id);
+            const inCartQty = inCartItem ? inCartItem.qty : 0;
 
             card.innerHTML = `
                 <div style="display:flex; gap:0.85rem; align-items:flex-start;">
                     <img src="${prod.img}" alt="${prod.name}" style="width:75px; height:75px; border-radius:var(--radius-md); object-fit:cover; border:1px solid var(--border-color); flex-shrink:0;" onerror="this.src='https://ui-avatars.com/api/?name=Prod&background=d45979&color=fff'">
-                    <div style="flex:1;">
-                        <span style="font-size:0.68rem; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">${prod.category}</span>
-                        <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin:0.15rem 0 0.25rem; line-height:1.25;">${prod.name}</h4>
-                        <div style="font-size:1.05rem; font-weight:800; color:var(--primary);">${formatCurrency(prod.price)}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.68rem; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">${prod.category}</span>
+                            ${isOutOfStock 
+                                ? `<span style="font-size:0.68rem; font-weight:800; color:#ef4444; background:#fee2e2; padding:0.1rem 0.45rem; border-radius:10px;"><i class="fa-solid fa-circle-xmark"></i> Agotado</span>`
+                                : `<span style="font-size:0.68rem; font-weight:700; color:#15803d; background:#dcfce7; padding:0.1rem 0.45rem; border-radius:10px;"><i class="fa-solid fa-boxes-stacked"></i> ${stock} disponibles</span>`
+                            }
+                        </div>
+                        <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin:0.2rem 0 0.25rem; line-height:1.25;">${prod.name}</h4>
+                        <div style="display:flex; align-items:baseline; gap:0.5rem;">
+                            <span style="font-size:1.05rem; font-weight:800; color:var(--primary);">${formatCurrency(price)}</span>
+                            ${inCartQty > 0 ? `<span style="font-size:0.72rem; color:var(--text-secondary); font-weight:700;">(${inCartQty} en canasta)</span>` : ''}
+                        </div>
                     </div>
                 </div>
-                <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.35; margin:0;">${prod.desc}</p>
+                <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.35; margin:0;">${prod.desc || 'Producto cosmético profesional garantizado de Lety Look Spa.'}</p>
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; border-top:1px solid var(--border-color); padding-top:0.75rem; margin-top:0.25rem;">
-                    <div class="shop-qty-control">
+                    <div class="shop-qty-control" style="${isOutOfStock ? 'opacity:0.4; pointer-events:none;' : ''}">
                         <button class="shop-qty-btn btn-client-qty-minus" data-id="${prod.id}" type="button">-</button>
-                        <input type="text" class="shop-qty-input" id="qty-input-${prod.id}" value="${currentQty}" readonly>
-                        <button class="shop-qty-btn btn-client-qty-plus" data-id="${prod.id}" type="button">+</button>
+                        <input type="text" class="shop-qty-input" id="qty-input-${prod.id}" value="1" readonly>
+                        <button class="shop-qty-btn btn-client-qty-plus" data-id="${prod.id}" data-max="${stock}" type="button">+</button>
                     </div>
                     <div style="display:flex; gap:0.4rem;">
-                        <button class="btn-book-service btn-client-ask-wa" data-id="${prod.id}" type="button" style="padding:0.45rem 0.75rem; font-size:0.75rem; background:#25d366; border-color:#25d366; color:#fff;" title="Consultar por WhatsApp">
-                            <i class="fa-brands fa-whatsapp"></i> Consultar
+                        <button class="btn-book-service btn-client-ask-wa" data-id="${prod.id}" type="button" style="padding:0.45rem 0.65rem; font-size:0.75rem; background:#25d366; border-color:#25d366; color:#fff;" title="Consultar por WhatsApp">
+                            <i class="fa-brands fa-whatsapp"></i>
                         </button>
-                        <button class="btn-hero-book btn-client-add-order" data-id="${prod.id}" type="button" style="padding:0.45rem 0.75rem; font-size:0.75rem;">
-                            <i class="fa-solid fa-cart-plus"></i> Agregar
+                        <button class="btn-hero-book btn-client-add-cart" data-id="${prod.id}" type="button" style="padding:0.45rem 0.85rem; font-size:0.75rem; ${isOutOfStock ? 'opacity:0.5; cursor:not-allowed;' : ''}" ${isOutOfStock ? 'disabled' : ''}>
+                            <i class="fa-solid fa-basket-shopping"></i>
+                            <span>${isOutOfStock ? 'Agotado' : 'Agregar'}</span>
                         </button>
                     </div>
                 </div>
@@ -1459,17 +1496,18 @@ document.addEventListener('DOMContentLoaded', () => {
             grid.appendChild(card);
         });
 
-        // Listeners for quantity and actions
+        // Quantity Plus/Minus listeners in catalog
         grid.querySelectorAll('.btn-client-qty-plus').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = btn.getAttribute('data-id');
+                const max = Number(btn.getAttribute('data-max')) || 99;
                 const input = document.getElementById(`qty-input-${id}`);
                 let val = parseInt(input.value) || 1;
-                val += 1;
-                input.value = val;
-                if (clientShopCart[id]) {
-                    clientShopCart[id] = val;
-                    updateClientOrderSummaryBar();
+                if (val < max) {
+                    val += 1;
+                    input.value = val;
+                } else {
+                    alert(`Solo hay ${max} unidades disponibles de este producto.`);
                 }
             });
         });
@@ -1482,63 +1520,445 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (val > 1) {
                     val -= 1;
                     input.value = val;
-                    if (clientShopCart[id]) {
-                        clientShopCart[id] = val;
-                        updateClientOrderSummaryBar();
+                }
+            });
+        });
+
+        // Add to persistent basket
+        grid.querySelectorAll('.btn-client-add-cart').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const products = getShopCatalog();
+                const prod = products.find(p => p.id === id);
+                if (!prod) return;
+
+                const stock = Number(prod.stock !== undefined ? prod.stock : 10);
+                if (stock <= 0) {
+                    alert('Este producto se encuentra agotado temporalmente.');
+                    return;
+                }
+
+                const input = document.getElementById(`qty-input-${id}`);
+                const addQty = parseInt(input ? input.value : 1) || 1;
+
+                const cart = getStoredCart();
+                const existing = cart.find(it => it.id === prod.id);
+
+                if (existing) {
+                    const newTotal = (existing.qty || 0) + addQty;
+                    if (newTotal > stock) {
+                        alert(`No puedes agregar más de ${stock} unidades (ya tienes ${existing.qty} en tu canasta).`);
+                        return;
+                    }
+                    existing.qty = newTotal;
+                } else {
+                    if (addQty > stock) {
+                        alert(`Solo hay ${stock} unidades disponibles.`);
+                        return;
+                    }
+                    cart.push({
+                        id: prod.id,
+                        name: prod.name,
+                        category: prod.category,
+                        price: prod.salePrice || prod.price || 0,
+                        img: prod.img,
+                        qty: addQty
+                    });
+                }
+
+                saveStoredCart(cart);
+                renderShopClientTab();
+                
+                // Friendly confirmation banner
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>¡Agregado!</span>';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.style.background = '';
+                }, 1400);
+            });
+        });
+
+        // Quick WhatsApp inquiry per single item
+        grid.querySelectorAll('.btn-client-ask-wa').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const products = getShopCatalog();
+                const prod = products.find(p => p.id === id);
+                if (!prod) return;
+                const qty = parseInt(document.getElementById(`qty-input-${id}`)?.value) || 1;
+                const price = prod.salePrice || prod.price || 0;
+                const total = price * qty;
+                const msg = `¡Hola LETY LOOK! ✨ Vi este producto en la tienda de la App y me interesa consultar disponibilidad:\n\n*${prod.name}*\nCantidad: ${qty} unidad(es)\nValor: ${formatCurrency(total)}\n\n¿Tienen entrega o cómo puedo coordinar la compra? ¡Gracias!`;
+                window.open(`https://wa.me/573138869676?text=${encodeURIComponent(msg)}`, '_blank');
+            });
+        });
+
+        updateCartBadgeAndFloatingBar();
+    }
+
+    // =========================================================================
+    // CANASTA DE COMPRAS MODAL CONTROLLER (VIEW, EDIT, CHECKOUT)
+    // =========================================================================
+    function openCartModal() {
+        const modal = document.getElementById('modal-client-cart');
+        if (!modal) return;
+
+        renderCartModalContent();
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCartModal() {
+        const modal = document.getElementById('modal-client-cart');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    function renderCartModalContent() {
+        const container = document.getElementById('cart-items-container');
+        const countLabel = document.getElementById('cart-modal-items-count');
+        const checkoutSec = document.getElementById('cart-checkout-section');
+        const clearBtn = document.getElementById('btn-clear-cart');
+
+        if (!container) return;
+        container.innerHTML = '';
+
+        const cart = getStoredCart();
+        const catalog = getShopCatalog();
+        const totalItems = cart.reduce((acc, it) => acc + (it.qty || 0), 0);
+
+        if (countLabel) {
+            countLabel.textContent = `${totalItems} ${totalItems === 1 ? 'producto guardado' : 'productos guardados'} en canasta`;
+        }
+
+        if (cart.length === 0) {
+            if (checkoutSec) checkoutSec.style.display = 'none';
+            if (clearBtn) clearBtn.style.display = 'none';
+            container.innerHTML = `
+                <div style="text-align:center; padding:2.5rem 1rem;">
+                    <div style="width:68px; height:68px; border-radius:50%; background:var(--bg-subtle); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 1rem;">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                    </div>
+                    <h4 style="font-family:'Playfair Display', serif; font-size:1.15rem; margin-bottom:0.4rem; color:var(--text-main);">Tu canasta está vacía</h4>
+                    <p style="font-size:0.8rem; color:var(--text-secondary); max-width:280px; margin:0 auto 1.25rem;">
+                        Agrega los aceites capilares, kits de kapping y productos favoritos para hacer tu pedido cuando gustes.
+                    </p>
+                    <button type="button" id="btn-empty-cart-go-shop" class="btn-hero-book" style="margin:0 auto; padding:0.65rem 1.25rem; font-size:0.85rem;">
+                        <i class="fa-solid fa-store"></i> Ver Productos de la Tienda
+                    </button>
+                </div>
+            `;
+            document.getElementById('btn-empty-cart-go-shop')?.addEventListener('click', () => {
+                closeCartModal();
+                switchTab('tab-shop');
+            });
+            return;
+        }
+
+        // Has items in cart
+        if (checkoutSec) checkoutSec.style.display = 'block';
+        if (clearBtn) clearBtn.style.display = 'inline-block';
+
+        let subtotal = 0;
+
+        cart.forEach(item => {
+            const prod = catalog.find(p => p.id === item.id);
+            const stock = prod ? Number(prod.stock !== undefined ? prod.stock : 10) : 99;
+            const lineTotal = (item.price || 0) * (item.qty || 1);
+            subtotal += lineTotal;
+
+            const row = document.createElement('div');
+            row.className = 'cart-item-card';
+            row.innerHTML = `
+                <img src="${item.img}" alt="${item.name}" class="cart-item-img" onerror="this.src='https://ui-avatars.com/api/?name=Prod&background=d45979&color=fff'">
+                <div class="cart-item-info">
+                    <h5 class="cart-item-title">${item.name}</h5>
+                    <div class="cart-item-price">${formatCurrency(item.price)} <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">/ ud</span></div>
+                    <div style="font-size:0.75rem; font-weight:700; color:var(--text-main); margin-top:0.15rem;">Subtotal: ${formatCurrency(lineTotal)}</div>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.4rem;">
+                    <button type="button" class="btn-cart-remove-item" data-id="${item.id}" style="background:none; border:none; color:#ef4444; font-size:0.85rem; cursor:pointer; padding:2px;" title="Eliminar de la canasta">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                    <div class="shop-qty-control" style="transform:scale(0.85); transform-origin:right center;">
+                        <button class="shop-qty-btn btn-cart-item-minus" data-id="${item.id}" type="button">-</button>
+                        <input type="text" class="shop-qty-input" value="${item.qty}" readonly>
+                        <button class="shop-qty-btn btn-cart-item-plus" data-id="${item.id}" data-max="${stock}" type="button">+</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+
+        // Event listeners for cart item quantity modifications
+        container.querySelectorAll('.btn-cart-item-plus').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const max = Number(b.getAttribute('data-max')) || 99;
+                const cart = getStoredCart();
+                const item = cart.find(it => it.id === id);
+                if (item) {
+                    if (item.qty < max) {
+                        item.qty += 1;
+                        saveStoredCart(cart);
+                        renderCartModalContent();
+                        renderShopClientTab();
+                    } else {
+                        alert(`Solo hay ${max} unidades disponibles de este producto.`);
                     }
                 }
             });
         });
 
-        grid.querySelectorAll('.btn-client-ask-wa').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-id');
-                const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
-                if (!prod) return;
-                const qty = parseInt(document.getElementById(`qty-input-${id}`)?.value) || 1;
-                const total = prod.price * qty;
-                const msg = `¡Hola LETY LOOK! ✨ Vi este producto en la tienda de la App y me interesa consultar disponibilidad:\n\n*${prod.name}*\nCantidad: ${qty} unidad(es)\nValor estimado: ${formatCurrency(total)}\n\n¿Tienen entrega o cómo puedo coordinar la compra? ¡Gracias!`;
-                window.open(`https://wa.me/573138869676?text=${encodeURIComponent(msg)}`, '_blank');
+        container.querySelectorAll('.btn-cart-item-minus').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const cart = getStoredCart();
+                const item = cart.find(it => it.id === id);
+                if (item) {
+                    if (item.qty > 1) {
+                        item.qty -= 1;
+                        saveStoredCart(cart);
+                    } else {
+                        if (confirm(`¿Deseas quitar "${item.name}" de tu canasta?`)) {
+                            const filtered = cart.filter(it => it.id !== id);
+                            saveStoredCart(filtered);
+                        }
+                    }
+                    renderCartModalContent();
+                    renderShopClientTab();
+                }
             });
         });
 
-        grid.querySelectorAll('.btn-client-add-order').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-id');
-                const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
-                if (!prod) return;
-                const qty = parseInt(document.getElementById(`qty-input-${id}`)?.value) || 1;
-                clientShopCart[id] = (clientShopCart[id] || 0) + qty;
-                updateClientOrderSummaryBar();
-                alert(`¡Se agregaron ${qty}x "${prod.name}" a tu consulta de pedido!`);
+        container.querySelectorAll('.btn-cart-remove-item').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const cart = getStoredCart();
+                const filtered = cart.filter(it => it.id !== id);
+                saveStoredCart(filtered);
+                renderCartModalContent();
+                renderShopClientTab();
             });
         });
+
+        // Update summary values
+        const subtotalEl = document.getElementById('cart-summary-subtotal');
+        const totalEl = document.getElementById('cart-summary-total');
+        if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+        if (totalEl) totalEl.textContent = formatCurrency(subtotal);
+
+        // Autofill client contact info if logged in
+        const currentClient = window.dataManager ? window.dataManager.getCurrentClient() : null;
+        const nameInput = document.getElementById('cart-client-name');
+        const phoneInput = document.getElementById('cart-client-phone');
+        if (currentClient) {
+            if (nameInput && !nameInput.value) nameInput.value = currentClient.name || '';
+            if (phoneInput && !phoneInput.value) phoneInput.value = currentClient.phone || '';
+        }
     }
 
-    function updateClientOrderSummaryBar() {
-        const bar = document.getElementById('client-order-summary-bar');
-        const preview = document.getElementById('client-order-total-preview');
-        if (!bar || !preview) return;
+    // Toggle delivery option radio styling
+    document.querySelectorAll('input[name="cart_delivery"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const val = e.target.value;
+            const pickupCard = document.getElementById('delivery-opt-pickup');
+            const shippingCard = document.getElementById('delivery-opt-shipping');
+            const addrGroup = document.getElementById('group-delivery-address');
+            const shippingSummary = document.getElementById('cart-summary-shipping');
 
-        const entries = Object.entries(clientShopCart);
-        if (entries.length === 0) {
-            bar.style.display = 'none';
+            if (val === 'pickup') {
+                pickupCard?.classList.add('active');
+                shippingCard?.classList.remove('active');
+                if (addrGroup) addrGroup.style.display = 'none';
+                if (shippingSummary) shippingSummary.textContent = 'Gratis';
+            } else {
+                shippingCard?.classList.add('active');
+                pickupCard?.classList.remove('active');
+                if (addrGroup) addrGroup.style.display = 'block';
+                if (shippingSummary) shippingSummary.textContent = 'A coordinar';
+            }
+        });
+    });
+
+    // Toggle payment option radio styling
+    document.querySelectorAll('input[name="cart_payment"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const val = e.target.value;
+            const transferCard = document.getElementById('pay-opt-transfer');
+            const cashCard = document.getElementById('pay-opt-cash');
+
+            if (val === 'transfer') {
+                transferCard?.classList.add('active');
+                cashCard?.classList.remove('active');
+            } else {
+                cashCard?.classList.add('active');
+                transferCard?.classList.remove('active');
+            }
+        });
+    });
+
+    // Empty entire cart button
+    document.getElementById('btn-clear-cart')?.addEventListener('click', () => {
+        if (confirm('¿Estás segura de vaciar toda tu canasta de productos?')) {
+            saveStoredCart([]);
+            renderCartModalContent();
+            renderShopClientTab();
+        }
+    });
+
+    // Open/Close cart modal listeners
+    document.getElementById('btn-header-cart')?.addEventListener('click', openCartModal);
+    document.getElementById('btn-open-cart-floating')?.addEventListener('click', openCartModal);
+    document.getElementById('btn-banner-open-cart')?.addEventListener('click', openCartModal);
+    document.getElementById('btn-close-cart-modal')?.addEventListener('click', closeCartModal);
+
+    // Modal background close
+    document.getElementById('modal-client-cart')?.addEventListener('click', (e) => {
+        if (e.target.id === 'modal-client-cart') closeCartModal();
+    });
+
+    // =========================================================================
+    // CONFIRM ORDER & EFFECT PAYMENT (AUTOMATIC INVENTORY DEDUCTION)
+    // =========================================================================
+    document.getElementById('btn-confirm-cart-order')?.addEventListener('click', () => {
+        const cart = getStoredCart();
+        if (cart.length === 0) {
+            alert('Tu canasta está vacía.');
             return;
         }
 
-        let total = 0;
-        let totalItems = 0;
-        entries.forEach(([id, qty]) => {
-            const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
-            if (prod) {
-                total += prod.price * qty;
-                totalItems += qty;
-            }
+        const nameInput = document.getElementById('cart-client-name');
+        const phoneInput = document.getElementById('cart-client-phone');
+        const addressInput = document.getElementById('cart-client-address');
+        const notesInput = document.getElementById('cart-client-notes');
+
+        const clientName = nameInput ? nameInput.value.trim() : '';
+        const clientPhone = phoneInput ? phoneInput.value.trim() : '';
+        const deliveryType = document.querySelector('input[name="cart_delivery"]:checked')?.value || 'pickup';
+        const paymentMethod = document.querySelector('input[name="cart_payment"]:checked')?.value || 'transfer';
+
+        if (!clientName) {
+            alert('Por favor escribe tu nombre completo para el pedido.');
+            nameInput?.focus();
+            return;
+        }
+
+        if (!clientPhone) {
+            alert('Por favor escribe tu número de WhatsApp para coordinar la entrega.');
+            phoneInput?.focus();
+            return;
+        }
+
+        const total = cart.reduce((acc, it) => acc + ((it.price || 0) * (it.qty || 1)), 0);
+
+        // PROCESS ORDER & REDUCE INVENTORY AUTOMATICALLY
+        if (!window.dataManager) {
+            window.dataManager = new window.SpaDataManager();
+        }
+
+        const result = window.dataManager.createShopOrder({
+            clientName,
+            clientPhone,
+            deliveryType,
+            deliveryAddress: addressInput ? addressInput.value.trim() : '',
+            paymentMethod,
+            paymentStatus: 'Pagado',
+            items: cart,
+            total,
+            notes: notesInput ? notesInput.value.trim() : ''
         });
 
-        preview.textContent = `${formatCurrency(total)} (${totalItems} ${totalItems === 1 ? 'prod.' : 'prods.'})`;
-        bar.style.display = 'flex';
+        if (result && result.success) {
+            const order = result.order;
+
+            // Empty the client's shopping basket
+            saveStoredCart([]);
+            closeCartModal();
+
+            // Display order success modal
+            showOrderSuccessModal(order);
+
+            // Re-render shop view with updated inventory stock
+            renderShopClientTab();
+        } else {
+            alert('Ocurrió un error al procesar el pedido. Por favor intenta nuevamente.');
+        }
+    });
+
+    function showOrderSuccessModal(order) {
+        const modal = document.getElementById('modal-order-success');
+        const codeEl = document.getElementById('order-success-code');
+        const receiptEl = document.getElementById('order-success-receipt');
+        if (!modal) return;
+
+        if (codeEl) codeEl.textContent = `${order.orderNumber} - Pagado`;
+
+        let itemsHtml = order.items.map(it => `
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                <span><strong>${it.qty}x</strong> ${it.name}</span>
+                <span style="font-weight:700;">${formatCurrency(it.price * it.qty)}</span>
+            </div>
+        `).join('');
+
+        if (receiptEl) {
+            receiptEl.innerHTML = `
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.5px;">Resumen del Pedido:</div>
+                ${itemsHtml}
+                <div style="border-top:1px dashed var(--border-color); margin-top:0.4rem; padding-top:0.4rem; display:flex; justify-content:space-between; font-weight:800; font-size:0.9rem; color:var(--primary);">
+                    <span>Total Pagado:</span>
+                    <span>${formatCurrency(order.total)}</span>
+                </div>
+                <div style="margin-top:0.5rem; font-size:0.72rem; color:var(--text-secondary);">
+                    <div><strong>Cliente:</strong> ${order.clientName} (${order.clientPhone})</div>
+                    <div><strong>Entrega:</strong> ${order.deliveryType === 'pickup' ? 'Recoger en Spa (Calle 139 Sur #49-42)' : `A Domicilio (${order.deliveryAddress || 'A coordinar'})`}</div>
+                    <div><strong>Método de Pago:</strong> ${order.paymentMethod === 'transfer' ? 'Transferencia (Bancolombia / Nequi)' : 'Efectivo en Spa'}</div>
+                </div>
+            `;
+        }
+
+        // WhatsApp Share Handler
+        const shareBtn = document.getElementById('btn-share-order-whatsapp');
+        if (shareBtn) {
+            shareBtn.onclick = () => {
+                let itemsListText = order.items.map(it => `• ${it.qty}x ${it.name} (${formatCurrency(it.price * it.qty)})`).join('\n');
+                const deliveryText = order.deliveryType === 'pickup' ? 'Recoger en el Spa (Calle 139 Sur #49-42, Caldas)' : `Domicilio a: ${order.deliveryAddress || 'Dirección a coordinar'}`;
+                const payText = order.paymentMethod === 'transfer' ? 'Transferencia Bancolombia / Nequi' : 'Efectivo en Spa';
+
+                const msg = `¡Hola LETY LOOK! ✨ Acabo de realizar el pedido *${order.orderNumber}* desde la App:\n\n*Cliente:* ${order.clientName}\n*WhatsApp:* ${order.clientPhone}\n*Entrega:* ${deliveryText}\n*Medio de Pago:* ${payText}\n\n*PRODUCTOS:* \n${itemsListText}\n\n*TOTAL EFECTUADO:* ${formatCurrency(order.total)}\n\n¿Me confirman recibido para coordinar la entrega? ¡Muchas gracias!`;
+                window.open(`https://wa.me/573138869676?text=${encodeURIComponent(msg)}`, '_blank');
+            };
+        }
+
+        modal.style.display = 'flex';
     }
+
+    document.getElementById('btn-close-order-success')?.addEventListener('click', () => {
+        const modal = document.getElementById('modal-order-success');
+        if (modal) modal.style.display = 'none';
+    });
+
+    // Direct WhatsApp button in cart modal
+    document.getElementById('btn-cart-whatsapp-order')?.addEventListener('click', () => {
+        const cart = getStoredCart();
+        if (cart.length === 0) return;
+
+        let total = 0;
+        let textList = '';
+        cart.forEach(it => {
+            const sub = (it.price || 0) * (it.qty || 1);
+            total += sub;
+            textList += `• ${it.qty}x ${it.name} (${formatCurrency(sub)})\n`;
+        });
+
+        const currentClient = window.dataManager ? window.dataManager.getCurrentClient() : null;
+        const clientName = currentClient ? currentClient.name : (document.getElementById('cart-client-name')?.value || 'Cliente');
+
+        const msg = `¡Hola LETY LOOK! ✨ Te saluda *${clientName}*. Deseo consultar y realizar el siguiente pedido de productos desde la tienda de la App:\n\n${textList}\n*Total Estimado: ${formatCurrency(total)}*\n\n¿Me confirman disponibilidad y forma de entrega? ¡Muchas gracias!`;
+        window.open(`https://wa.me/573138869676?text=${encodeURIComponent(msg)}`, '_blank');
+    });
 
     // Category filter click
     document.querySelectorAll('#client-shop-category-slider .cat-btn-pill').forEach(btn => {
@@ -1550,27 +1970,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Send multi-product order inquiry through WhatsApp
-    document.getElementById('btn-client-send-shop-order')?.addEventListener('click', () => {
-        const entries = Object.entries(clientShopCart);
-        if (entries.length === 0) return;
+    // Listen to inventory update events
+    window.addEventListener('lety_shop_updated', () => {
+        renderShopClientTab();
+        updateCartBadgeAndFloatingBar();
+    });
 
-        let total = 0;
-        let textList = '';
-        entries.forEach(([id, qty]) => {
-            const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
-            if (prod) {
-                const sub = prod.price * qty;
-                total += sub;
-                textList += `• ${qty}x ${prod.name} (${formatCurrency(sub)})\n`;
-            }
-        });
-
-        const currentClient = window.dataManager.getCurrentClient();
-        const clientName = currentClient ? currentClient.name : 'Cliente';
-
-        const msg = `¡Hola LETY LOOK! ✨ Te saluda *${clientName}*. Deseo consultar y realizar el siguiente pedido de productos desde la tienda de la App:\n\n${textList}\n*Total Estimado: ${formatCurrency(total)}*\n\n¿Me confirman disponibilidad y forma de entrega? ¡Muchas gracias!`;
-        window.open(`https://wa.me/573138869676?text=${encodeURIComponent(msg)}`, '_blank');
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'lety_look_shop_products') {
+            renderShopClientTab();
+            updateCartBadgeAndFloatingBar();
+        }
     });
 
     // Banner from Explore tab to shop

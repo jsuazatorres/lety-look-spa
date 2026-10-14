@@ -28,25 +28,63 @@
 </head>
 <body>
     <div class="mobile-app-container">
-        <!-- Top App Bar -->
-        <header class="app-header">
-            <div class="header-brand">
-                <img src="img/logo.png" alt="LETY LOOK Logo" style="height: 44px; width: auto; object-fit: contain; border-radius: var(--radius-sm);">
-                <div class="brand-text">
-                    <h1 style="font-size: 1.15rem;">LETY LOOK</h1>
-                    <span>Belleza Integral</span>
+        <!-- Top App Sticky Header & Navigation Bar -->
+        <div class="app-sticky-header">
+            <header class="app-header">
+                <div class="header-brand">
+                    <img src="img/logo.png" alt="LETY LOOK Logo" style="height: 44px; width: auto; object-fit: contain; border-radius: var(--radius-sm);">
+                    <div class="brand-text">
+                        <h1 style="font-size: 1.15rem;">LETY LOOK</h1>
+                        <span>Belleza Integral</span>
+                    </div>
                 </div>
-            </div>
 
-            <div style="display:flex; align-items:center; gap:0.4rem;">
-                <button id="btn-force-refresh-client-app" class="header-action-btn" title="Actualizar App" type="button">
-                    <i class="fa-solid fa-rotate"></i>
-                </button>
-                <div id="header-auth-badge">
-                    <!-- Populated dynamically: User Avatar or Login Button -->
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                    <button id="btn-force-refresh-client-app" class="header-action-btn" title="Actualizar App" type="button">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                    <!-- Header Shopping Cart Button with Dynamic Badge -->
+                    <button id="btn-header-cart" class="header-action-btn" title="Mi Canasta de Productos" type="button" style="position:relative;">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <span id="header-cart-badge" class="header-cart-badge" style="display:none;">0</span>
+                    </button>
+                    <div id="header-auth-badge">
+                        <!-- Populated dynamically: User Avatar or Login Button -->
+                    </div>
                 </div>
-            </div>
-        </header>
+            </header>
+
+            <!-- Top App Navigation Menu (Barra de Menú Arriba) -->
+            <nav class="app-top-nav">
+                <button class="nav-tab-btn active" data-target="tab-explore">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Explorar</span>
+                </button>
+                <button class="nav-tab-btn" data-target="tab-book">
+                    <i class="fa-solid fa-calendar-plus"></i>
+                    <span>Reservar</span>
+                </button>
+                <button class="nav-tab-btn" data-target="tab-shop">
+                    <div style="position:relative; display:inline-block;">
+                        <i class="fa-solid fa-store"></i>
+                        <span id="nav-shop-cart-pill" class="badge-nav-soon">Tienda</span>
+                    </div>
+                    <span>Tienda</span>
+                </button>
+                <button class="nav-tab-btn" data-target="tab-staff">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>Equipo</span>
+                </button>
+                <button class="nav-tab-btn" data-target="tab-my-appointments">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Mis Citas</span>
+                </button>
+                <button class="nav-tab-btn" data-target="tab-account">
+                    <i class="fa-solid fa-user"></i>
+                    <span id="nav-account-label">Cuenta</span>
+                </button>
+            </nav>
+        </div>
 
         <!-- ======================================================================
              TAB 1: EXPLORE & SERVICES CATALOG
@@ -316,26 +354,31 @@
         </section>
 
         <!-- ======================================================================
-             TAB: BOUTIQUE & TIENDA DE PRODUCTOS (PRÓXIMAMENTE)
+             TAB: BOUTIQUE & TIENDA DE PRODUCTOS
              ====================================================================== -->
-        <section id="tab-shop" class="tab-content" style="display: none; padding: 1.25rem 1.25rem 6rem;">
+        <section id="tab-shop" class="tab-content" style="display: none; padding: 1.25rem 1.25rem 3rem;">
             <!-- Hero Banner for Shop -->
-            <div style="background:linear-gradient(135deg, #1e1b18, #3b2832); color:#fff; border-radius:var(--radius-lg); padding:1.6rem 1.3rem; margin-bottom:1.25rem; position:relative; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.18);">
+            <div style="background:linear-gradient(135deg, #1e1b18, #3b2832); color:#fff; border-radius:var(--radius-lg); padding:1.5rem 1.25rem; margin-bottom:1.25rem; position:relative; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.18);">
                 <div style="position:absolute; right:-15px; bottom:-15px; font-size:6.5rem; color:rgba(255,255,255,0.04); pointer-events:none;">
                     <i class="fa-solid fa-bag-shopping"></i>
                 </div>
-                <div style="display:inline-flex; align-items:center; gap:0.4rem; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; font-size:0.68rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.6rem;">
-                    <i class="fa-solid fa-clock"></i> ¡Próximamente en Línea!
+                <div style="display:inline-flex; align-items:center; gap:0.4rem; background:linear-gradient(135deg, #10b981, #059669); color:#fff; font-size:0.68rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.6rem;">
+                    <i class="fa-solid fa-check-circle"></i> Tienda Online Activa
                 </div>
-                <h2 style="font-family:'Playfair Display', serif; font-size:1.45rem; font-weight:700; margin-bottom:0.4rem; color:#fff;">
+                <h2 style="font-family:'Playfair Display', serif; font-size:1.4rem; font-weight:700; margin-bottom:0.35rem; color:#fff;">
                     Boutique & Cuidado en Casa
                 </h2>
-                <p style="font-size:0.82rem; color:rgba(255,255,255,0.85); line-height:1.4; margin-bottom:1rem;">
-                    Lleva los productos profesionales de LETY LOOK a tu rutina diaria. Selecciona cantidades, arma tu consulta de pedido o pregúntanos directamente por WhatsApp.
+                <p style="font-size:0.82rem; color:rgba(255,255,255,0.88); line-height:1.4; margin-bottom:0.85rem;">
+                    Agrega los productos profesionales de LETY LOOK a tu canasta, edita cantidades cuando gustes y haz tu pedido cuando quieras. Al efectuar el pago, el inventario se actualiza en tiempo real.
                 </p>
-                <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:#fde68a;">
-                    <i class="fa-brands fa-whatsapp"></i>
-                    <span>¿Deseas encargar hoy? ¡Pregúntanos por WhatsApp!</span>
+                <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+                    <button id="btn-banner-open-cart" type="button" style="background:#fff; color:#1e1b18; border:none; padding:0.45rem 0.85rem; border-radius:var(--radius-full); font-size:0.78rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem;">
+                        <i class="fa-solid fa-basket-shopping" style="color:var(--primary);"></i>
+                        <span id="banner-cart-btn-text">Ver Mi Canasta (0)</span>
+                    </button>
+                    <span style="font-size:0.75rem; color:#fde68a; display:inline-flex; align-items:center; gap:0.3rem;">
+                        <i class="fa-solid fa-shield-halved"></i> Stock en vivo
+                    </span>
                 </div>
             </div>
 
@@ -352,18 +395,19 @@
                 <!-- Populated dynamically by client-app.js -->
             </div>
 
-            <!-- Pre-Order WhatsApp Floating Helper Bar -->
-            <div id="client-order-summary-bar" style="display:none; position:fixed; bottom:74px; left:50%; transform:translateX(-50%); width:calc(100% - 2rem); max-width:400px; background:var(--bg-surface, #fff); border:1.5px solid var(--primary); box-shadow:0 12px 35px rgba(212,89,121,0.28); border-radius:var(--radius-lg); padding:0.85rem 1.1rem; z-index:998; align-items:center; justify-content:space-between;">
+            <!-- Persistent Cart Floating Access Bar -->
+            <div id="client-cart-floating-bar" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:calc(100% - 2rem); max-width:420px; background:var(--bg-surface, #fff); border:1.5px solid var(--primary); box-shadow:0 12px 35px rgba(212,89,121,0.28); border-radius:var(--radius-lg); padding:0.85rem 1.1rem; z-index:998; align-items:center; justify-content:space-between;">
                 <div>
-                    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">Consulta de Pedido:</div>
-                    <div id="client-order-total-preview" style="font-weight:800; font-size:1.05rem; color:var(--text-main);">$0</div>
+                    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">🧺 Canasta de Productos:</div>
+                    <div id="client-cart-floating-total" style="font-weight:800; font-size:1.05rem; color:var(--text-main);">$0</div>
                 </div>
-                <button id="btn-client-send-shop-order" type="button" class="btn-hero-book" style="padding:0.6rem 1rem; font-size:0.82rem; border-radius:var(--radius-md);">
-                    <i class="fa-brands fa-whatsapp"></i>
-                    <span>Consultar Pedido</span>
+                <button id="btn-open-cart-floating" type="button" class="btn-hero-book" style="padding:0.6rem 1.1rem; font-size:0.82rem; border-radius:var(--radius-md);">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                    <span>Ver y Editar Canasta</span>
                 </button>
             </div>
         </section>
+
 
         <!-- ======================================================================
              TAB 3: SPECIALISTS DIRECTORY
@@ -623,41 +667,175 @@
         </div>
 
         <!-- ======================================================================
-             BOTTOM APP NAVIGATION BAR
+             MODAL: CANASTA DE PRODUCTOS & CHECKOUT
              ====================================================================== -->
-        <nav class="app-bottom-nav">
-            <button class="nav-tab-btn active" data-target="tab-explore">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span>Explorar</span>
-            </button>
-            <button class="nav-tab-btn" data-target="tab-book">
-                <i class="fa-solid fa-calendar-plus"></i>
-                <span>Reservar</span>
-            </button>
-            <button class="nav-tab-btn" data-target="tab-shop">
-                <div style="position:relative; display:inline-block;">
-                    <i class="fa-solid fa-store"></i>
-                    <span class="badge-nav-soon">Pronto</span>
+        <div id="modal-client-cart" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:flex-end; justify-content:center; padding:0;">
+            <div style="background:var(--bg-surface, #fff); border-top-left-radius:var(--radius-lg); border-top-right-radius:var(--radius-lg); padding:1.4rem 1.25rem 2rem; max-width:460px; width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 -10px 40px rgba(0,0,0,0.3); border:1px solid var(--border-color); text-align:left;">
+                
+                <!-- Cart Modal Header -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem;">
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-family:'Playfair Display', serif; font-size:1.25rem; color:var(--text-main); margin:0;">Mi Canasta</h3>
+                            <span id="cart-modal-items-count" style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">0 productos guardados</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <button id="btn-clear-cart" type="button" style="background:none; border:none; color:#ef4444; font-size:0.75rem; font-weight:700; cursor:pointer; display:none;">
+                            <i class="fa-solid fa-trash-can"></i> Vaciar
+                        </button>
+                        <button id="btn-close-cart-modal" type="button" style="background:none; border:none; font-size:1.4rem; color:var(--text-secondary); cursor:pointer; padding:0.25rem;">&times;</button>
+                    </div>
                 </div>
-                <span>Tienda</span>
-            </button>
-            <button class="nav-tab-btn" data-target="tab-staff">
-                <i class="fa-solid fa-user-tie"></i>
-                <span>Equipo</span>
-            </button>
-            <button class="nav-tab-btn" data-target="tab-my-appointments">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                <span>Mis Citas</span>
-            </button>
-            <button class="nav-tab-btn" data-target="tab-account">
-                <i class="fa-solid fa-user"></i>
-                <span id="nav-account-label">Cuenta</span>
-            </button>
-        </nav>
+
+                <!-- Cart Items Container -->
+                <div id="cart-items-container" style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.25rem;">
+                    <!-- Populated dynamically: empty state or item list -->
+                </div>
+
+                <!-- Checkout Form & Options (Only visible if cart has items) -->
+                <div id="cart-checkout-section" style="display:none;">
+                    
+                    <!-- Delivery Option -->
+                    <div style="margin-bottom:1rem;">
+                        <label style="font-size:0.8rem; font-weight:700; color:var(--text-main); display:block; margin-bottom:0.4rem;">
+                            <i class="fa-solid fa-truck" style="color:var(--primary);"></i> Método de Entrega:
+                        </label>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                            <label class="delivery-option-card active" id="delivery-opt-pickup" style="display:flex; flex-direction:column; gap:0.2rem; padding:0.65rem 0.8rem; border-radius:var(--radius-md); border:1.5px solid var(--primary); background:var(--primary-light); cursor:pointer; font-size:0.78rem;">
+                                <div style="display:flex; align-items:center; justify-content:space-between;">
+                                    <span style="font-weight:800; color:var(--text-main);">🏪 Recoger en Spa</span>
+                                    <input type="radio" name="cart_delivery" value="pickup" checked style="accent-color:var(--primary);">
+                                </div>
+                                <span style="font-size:0.7rem; color:var(--text-secondary);">Calle 139 Sur #49-42 (Gratis)</span>
+                            </label>
+                            <label class="delivery-option-card" id="delivery-opt-shipping" style="display:flex; flex-direction:column; gap:0.2rem; padding:0.65rem 0.8rem; border-radius:var(--radius-md); border:1.5px solid var(--border-color); background:var(--bg-subtle); cursor:pointer; font-size:0.78rem;">
+                                <div style="display:flex; align-items:center; justify-content:space-between;">
+                                    <span style="font-weight:800; color:var(--text-main);">🛵 Domicilio</span>
+                                    <input type="radio" name="cart_delivery" value="delivery" style="accent-color:var(--primary);">
+                                </div>
+                                <span style="font-size:0.7rem; color:var(--text-secondary);">Caldas / Medellín (A coordinar)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Client Personal Details for Order -->
+                    <div style="background:var(--bg-subtle); padding:0.9rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1rem;">
+                        <div style="font-size:0.8rem; font-weight:700; color:var(--text-main); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.4rem;">
+                            <i class="fa-solid fa-user-check" style="color:var(--primary);"></i> Datos de Contacto para el Pedido:
+                        </div>
+                        <div class="client-form-group" style="margin-bottom:0.5rem;">
+                            <label for="cart-client-name" style="font-size:0.75rem;">Tu Nombre Completo *</label>
+                            <input type="text" id="cart-client-name" class="client-form-input" placeholder="Ej. Camila Restrepo" required style="padding:0.6rem 0.8rem; font-size:0.85rem;">
+                        </div>
+                        <div class="client-form-group" style="margin-bottom:0.5rem;">
+                            <label for="cart-client-phone" style="font-size:0.75rem;">WhatsApp / Teléfono *</label>
+                            <input type="tel" id="cart-client-phone" class="client-form-input" placeholder="Ej. 3138869676" required style="padding:0.6rem 0.8rem; font-size:0.85rem;">
+                        </div>
+                        <div class="client-form-group" id="group-delivery-address" style="display:none; margin-bottom:0.5rem;">
+                            <label for="cart-client-address" style="font-size:0.75rem;">Dirección de Entrega y Barrio</label>
+                            <input type="text" id="cart-client-address" class="client-form-input" placeholder="Ej. Cra 50 #130-20, Barrio La Primavera" style="padding:0.6rem 0.8rem; font-size:0.85rem;">
+                        </div>
+                        <div class="client-form-group" style="margin-bottom:0;">
+                            <label for="cart-client-notes" style="font-size:0.75rem;">Notas / Indicaciones Especiales</label>
+                            <input type="text" id="cart-client-notes" class="client-form-input" placeholder="Opcional: tono de esmalte, hora estimada..." style="padding:0.6rem 0.8rem; font-size:0.85rem;">
+                        </div>
+                    </div>
+
+                    <!-- Payment Method Option -->
+                    <div style="margin-bottom:1rem;">
+                        <label style="font-size:0.8rem; font-weight:700; color:var(--text-main); display:block; margin-bottom:0.4rem;">
+                            <i class="fa-solid fa-credit-card" style="color:var(--primary);"></i> Medio de Pago:
+                        </label>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                            <label class="payment-option-card active" id="pay-opt-transfer" style="display:flex; flex-direction:column; gap:0.2rem; padding:0.65rem 0.8rem; border-radius:var(--radius-md); border:1.5px solid var(--primary); background:var(--primary-light); cursor:pointer; font-size:0.78rem;">
+                                <div style="display:flex; align-items:center; justify-content:space-between;">
+                                    <span style="font-weight:800; color:var(--text-main);">📲 Transferencia</span>
+                                    <input type="radio" name="cart_payment" value="transfer" checked style="accent-color:var(--primary);">
+                                </div>
+                                <span style="font-size:0.7rem; color:var(--text-secondary);">Bancolombia / Nequi</span>
+                            </label>
+                            <label class="payment-option-card" id="pay-opt-cash" style="display:flex; flex-direction:column; gap:0.2rem; padding:0.65rem 0.8rem; border-radius:var(--radius-md); border:1.5px solid var(--border-color); background:var(--bg-subtle); cursor:pointer; font-size:0.78rem;">
+                                <div style="display:flex; align-items:center; justify-content:space-between;">
+                                    <span style="font-weight:800; color:var(--text-main);">💵 En Spa / Efectivo</span>
+                                    <input type="radio" name="cart_payment" value="cash" style="accent-color:var(--primary);">
+                                </div>
+                                <span style="font-size:0.7rem; color:var(--text-secondary);">Al recibir o retirar</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Calculation Summary -->
+                    <div style="background:var(--bg-subtle); padding:0.9rem 1rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1.15rem;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.35rem;">
+                            <span>Subtotal productos:</span>
+                            <span id="cart-summary-subtotal" style="font-weight:700;">$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.5rem; border-bottom:1px dashed var(--border-color); padding-bottom:0.4rem;">
+                            <span>Costo de Entrega:</span>
+                            <span id="cart-summary-shipping" style="color:#15803d; font-weight:700;">Gratis</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.95rem; font-weight:800; color:var(--text-main);">Total del Pedido:</span>
+                            <span id="cart-summary-total" style="font-size:1.25rem; font-weight:800; color:var(--primary);">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- Checkout Confirmation Button -->
+                    <button id="btn-confirm-cart-order" type="button" class="btn-hero-book" style="width:100%; justify-content:center; padding:0.9rem; font-size:0.95rem; box-shadow:0 8px 25px rgba(212,89,121,0.35); margin-bottom:0.5rem;">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Confirmar Pedido & Efectuar Pago</span>
+                    </button>
+                    
+                    <button id="btn-cart-whatsapp-order" type="button" class="btn-client-wa" style="width:100%; justify-content:center; padding:0.75rem; font-size:0.85rem;">
+                        <i class="fa-brands fa-whatsapp"></i>
+                        <span>Pedir Directo por WhatsApp</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Confirmación Exitosa de Pedido con Descuento de Inventario -->
+        <div id="modal-order-success" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center; padding:1.25rem;">
+            <div style="background:var(--bg-surface, #fff); border-radius:var(--radius-lg); padding:2rem 1.4rem; max-width:420px; width:100%; box-shadow:0 15px 40px rgba(0,0,0,0.4); text-align:center; border:1px solid var(--border-color);">
+                <div style="width:68px; height:68px; border-radius:50%; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 1.1rem; box-shadow:0 8px 20px rgba(21,128,61,0.25);">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                </div>
+                <h3 style="font-family:'Playfair Display', serif; font-size:1.4rem; color:var(--text-main); margin-bottom:0.35rem;">
+                    ¡Pedido Registrado con Éxito!
+                </h3>
+                <div id="order-success-code" style="display:inline-block; background:var(--primary-light); color:var(--primary); font-size:0.85rem; font-weight:800; padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:0.85rem; letter-spacing:1px;">
+                    #PED-0000
+                </div>
+                <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.45; margin-bottom:1.15rem;">
+                    Hemos registrado tu pedido y <strong>actualizado automáticamente el inventario del Spa</strong>. Te esperamos para entregártelo o enviarlo a tu dirección.
+                </p>
+
+                <!-- Order Details Receipt Box -->
+                <div id="order-success-receipt" style="background:var(--bg-subtle); border:1px dashed var(--border-color); border-radius:var(--radius-md); padding:0.9rem; text-align:left; font-size:0.8rem; margin-bottom:1.25rem; max-height:180px; overflow-y:auto;">
+                    <!-- Inserted dynamically -->
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                    <button id="btn-share-order-whatsapp" type="button" class="btn-client-wa" style="width:100%; justify-content:center; padding:0.85rem; font-size:0.9rem;">
+                        <i class="fa-brands fa-whatsapp"></i>
+                        <span>Enviar Comprobante al Spa (+57 3138869676)</span>
+                    </button>
+                    <button id="btn-close-order-success" type="button" class="btn-hero-book" style="width:100%; justify-content:center; padding:0.75rem; font-size:0.85rem; background:none; border:1px solid var(--border-color); color:var(--text-main);">
+                        <span>Seguir Explorando</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=19.0"></script>
-    <script src="js/client-app.js?v=19.0"></script>
+    <script src="js/data.js?v=21.0"></script>
+    <script src="js/client-app.js?v=21.0"></script>
 </body>
 </html>
+

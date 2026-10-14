@@ -8,9 +8,72 @@ window.STORAGE_KEYS = window.STORAGE_KEYS || {
     APPOINTMENTS: 'lety_look_appointments',
     SETTINGS: 'lety_look_settings',
     CLIENTS: 'lety_look_clients',
-    CURRENT_CLIENT: 'lety_look_current_client'
+    CURRENT_CLIENT: 'lety_look_current_client',
+    SHOP_PRODUCTS: 'lety_look_shop_products',
+    ORDERS: 'lety_look_orders',
+    CLIENT_CART: 'lety_look_client_cart'
 };
 var STORAGE_KEYS = window.STORAGE_KEYS;
+
+const DEFAULT_SHOP_PRODUCTS = [
+    {
+        id: 'prod-1',
+        name: 'Óleo Capilar Reparador Argán & Keratina 60ml',
+        category: 'Capilar',
+        stock: 18,
+        costPrice: 22000,
+        salePrice: 38000,
+        status: 'ok',
+        desc: 'Tratamiento intensivo con aceite de argán puro. Sella puntas, elimina el frizz y aporta brillo espejo sin efecto graso.',
+        img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=350&q=80'
+    },
+    {
+        id: 'prod-2',
+        name: 'Kit Kapping Gel Fortalecedor Lety Look',
+        category: 'Uñas & Kapping',
+        stock: 12,
+        costPrice: 32000,
+        salePrice: 55000,
+        status: 'ok',
+        desc: 'Bruma y gel fortalecedor de alta densidad para proteger uñas débiles, quebradizas o recién retiradas de acrílico.',
+        img: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=350&q=80'
+    },
+    {
+        id: 'prod-3',
+        name: 'Exfoliante Spa Hidratante Frutos Rojos 250g',
+        category: 'Cuidado Corporal',
+        stock: 15,
+        costPrice: 18000,
+        salePrice: 32000,
+        status: 'ok',
+        desc: 'Remueve células muertas con micropartículas naturales y manteca de karité. Deja la piel sedosa y con aroma dulce cautivador.',
+        img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=350&q=80'
+    },
+    {
+        id: 'prod-4',
+        name: 'Esmalte Semipermanente Gel UV Colección Lujo',
+        category: 'Uñas & Kapping',
+        stock: 24,
+        costPrice: 14000,
+        salePrice: 25000,
+        status: 'ok',
+        desc: 'Pigmentación ultra-intensa con secado en lámpara UV/LED. Acabado brillante con duración garantizada de hasta 21 días.',
+        img: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=350&q=80'
+    },
+    {
+        id: 'prod-5',
+        name: 'Serum Reparador Cutículas con Vitamina E',
+        category: 'Uñas & Kapping',
+        stock: 24,
+        costPrice: 11000,
+        salePrice: 20000,
+        status: 'ok',
+        desc: 'Fórmula nutritiva con aplicador en gotero. Nutre la raíz de la uña, previene padrastros y estimula el crecimiento saludable.',
+        img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=350&q=80'
+    }
+];
+window.DEFAULT_SHOP_PRODUCTS = DEFAULT_SHOP_PRODUCTS;
+
 
 const DEFAULT_CATEGORIES = [
     { id: 'manicura', name: 'Manicura', icon: 'fa-hand-sparkles', description: 'Cuidado, esculpido y diseño de uñas de manos' },
@@ -934,6 +997,125 @@ class SpaDataManager {
             window.cloudService.saveCloudDocument('lety_look', 'settings', settings);
         }
         return settings;
+    }
+
+    // Shop & Inventory Management
+    getShopProducts() {
+        const stored = localStorage.getItem(STORAGE_KEYS.SHOP_PRODUCTS);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                console.error('Error parsing stored shop products:', e);
+            }
+        }
+        localStorage.setItem(STORAGE_KEYS.SHOP_PRODUCTS, JSON.stringify(DEFAULT_SHOP_PRODUCTS));
+        return DEFAULT_SHOP_PRODUCTS;
+    }
+
+    saveShopProducts(products) {
+        localStorage.setItem(STORAGE_KEYS.SHOP_PRODUCTS, JSON.stringify(products));
+        if (window.cloudService && window.cloudService.isInitialized) {
+            window.cloudService.saveCloudDocument('lety_look', 'shop_products', { list: products, updatedAt: new Date().toISOString() });
+        }
+        window.dispatchEvent(new CustomEvent('lety_shop_updated', { detail: { products } }));
+        return products;
+    }
+
+    saveShopProduct(productData) {
+        const products = this.getShopProducts();
+        if (productData.id) {
+            const index = products.findIndex(p => p.id === productData.id);
+            if (index !== -1) {
+                products[index] = { ...products[index], ...productData };
+            } else {
+                products.push(productData);
+            }
+        } else {
+            productData.id = 'prod-' + Date.now();
+            products.push(productData);
+        }
+        this.saveShopProducts(products);
+        return productData;
+    }
+
+    deleteShopProduct(productId) {
+        let products = this.getShopProducts();
+        products = products.filter(p => p.id !== productId);
+        this.saveShopProducts(products);
+        return true;
+    }
+
+    getShopOrders() {
+        const stored = localStorage.getItem(STORAGE_KEYS.ORDERS);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                console.error('Error parsing stored shop orders:', e);
+            }
+        }
+        return [];
+    }
+
+    saveShopOrders(orders) {
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+        if (window.cloudService && window.cloudService.isInitialized) {
+            window.cloudService.saveCloudDocument('lety_look', 'orders', { list: orders, updatedAt: new Date().toISOString() });
+        }
+        return orders;
+    }
+
+    /**
+     * Process a client purchase/order:
+     * 1. Automatically reduces inventory quantities for ordered items
+     * 2. Registers the order in persistent orders storage
+     * 3. Syncs to Cloud / notifies admin panel in real-time
+     */
+    createShopOrder(orderData) {
+        const products = this.getShopProducts();
+        const orders = this.getShopOrders();
+
+        // 1. Reduce inventory quantities for each product in the order
+        if (Array.isArray(orderData.items)) {
+            orderData.items.forEach(orderItem => {
+                const product = products.find(p => p.id === orderItem.id);
+                if (product) {
+                    const currentStock = Number(product.stock) || 0;
+                    const deductQty = Number(orderItem.qty) || 1;
+                    product.stock = Math.max(0, currentStock - deductQty);
+                }
+            });
+            this.saveShopProducts(products);
+        }
+
+        // 2. Build the order entity
+        const newOrder = {
+            id: 'ord-' + Date.now(),
+            orderNumber: '#PED-' + Math.floor(1000 + Math.random() * 9000),
+            date: new Date().toISOString(),
+            clientName: orderData.clientName || 'Cliente',
+            clientPhone: orderData.clientPhone || '',
+            clientEmail: orderData.clientEmail || '',
+            deliveryType: orderData.deliveryType || 'pickup', // 'pickup' | 'delivery'
+            deliveryAddress: orderData.deliveryAddress || '',
+            paymentMethod: orderData.paymentMethod || 'transfer', // 'transfer' | 'cash'
+            paymentStatus: orderData.paymentStatus || 'Pagado', // 'Pagado' | 'Efectuado'
+            fulfillmentStatus: 'Por despachar',
+            items: orderData.items || [],
+            total: orderData.total || 0,
+            notes: orderData.notes || ''
+        };
+
+        orders.unshift(newOrder);
+        this.saveShopOrders(orders);
+
+        // 3. Dispatch global event so Admin and Client update live
+        window.dispatchEvent(new CustomEvent('lety_shop_updated', {
+            detail: { order: newOrder, products, orders }
+        }));
+
+        return { success: true, order: newOrder, updatedProducts: products };
     }
 
     resetToDefaults() {

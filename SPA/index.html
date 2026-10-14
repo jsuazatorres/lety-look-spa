@@ -463,8 +463,8 @@
                                 </p>
                             </div>
                             <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                                <button type="button" class="btn btn-primary" id="btn-shop-preview-add" style="background:linear-gradient(135deg, #f59e0b, #d97706); border:none; box-shadow:0 4px 15px rgba(245,158,11,0.3);">
-                                    <i class="fa-solid fa-plus-circle"></i> Nuevo Producto (Demo)
+                                <button type="button" class="btn btn-primary" id="btn-shop-open-create-modal" style="background:linear-gradient(135deg, #f59e0b, #d97706); border:none; box-shadow:0 4px 15px rgba(245,158,11,0.3);">
+                                    <i class="fa-solid fa-plus-circle"></i> Agregar Producto
                                 </button>
                                 <a href="cliente.html" target="_blank" class="btn btn-outline" style="border-color:var(--primary); color:var(--primary);">
                                     <i class="fa-solid fa-mobile-screen"></i> Ver Tienda en App Cliente
@@ -495,16 +495,16 @@
                             <div class="kpi-icon" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-bag-shopping"></i></div>
                             <div class="kpi-info">
                                 <span class="kpi-label">Pedidos Recibidos</span>
-                                <span class="kpi-value">0 Pendientes</span>
-                                <span class="kpi-trend neutral"><i class="fa-solid fa-clock"></i> Módulo en preparación</span>
+                                <span class="kpi-value" id="shop-kpi-orders-count">0 Efectuados</span>
+                                <span class="kpi-trend positive" id="shop-kpi-orders-trend"><i class="fa-solid fa-check-circle"></i> Sincronizado en vivo</span>
                             </div>
                         </div>
                         <div class="kpi-card">
                             <div class="kpi-icon" style="background:#fce7f3; color:#db2777;"><i class="fa-brands fa-whatsapp"></i></div>
                             <div class="kpi-info">
-                                <span class="kpi-label">Pedidos por WhatsApp</span>
+                                <span class="kpi-label">Canasta & WhatsApp</span>
                                 <span class="kpi-value">Activo</span>
-                                <span class="kpi-trend positive"><i class="fa-solid fa-bolt"></i> Consultas directas</span>
+                                <span class="kpi-trend positive"><i class="fa-solid fa-bolt"></i> Inventario conectado</span>
                             </div>
                         </div>
                     </div>
@@ -517,15 +517,15 @@
                                     <i class="fa-solid fa-boxes-packing"></i> Inventario & Stock
                                 </button>
                                 <button type="button" class="tab-pill-btn" id="btn-shop-tab-orders" style="padding:0.45rem 1rem; border-radius:var(--radius-sm); font-size:0.85rem; font-weight:700; border:none; cursor:pointer; background:transparent; color:var(--text-muted);">
-                                    <i class="fa-solid fa-clipboard-list"></i> Pedidos de Clientes (0)
+                                    <i class="fa-solid fa-clipboard-list"></i> <span id="shop-tab-orders-label">Pedidos de Clientes (0)</span>
                                 </button>
                                 <button type="button" class="tab-pill-btn" id="btn-shop-tab-pricing" style="padding:0.45rem 1rem; border-radius:var(--radius-sm); font-size:0.85rem; font-weight:700; border:none; cursor:pointer; background:transparent; color:var(--text-muted);">
                                     <i class="fa-solid fa-calculator"></i> Ajustes de Precios
                                 </button>
                             </div>
                             <div style="font-size:0.82rem; color:var(--text-muted); display:flex; align-items:center; gap:0.4rem;">
-                                <i class="fa-solid fa-circle-info" style="color:var(--primary);"></i>
-                                <span>Control preliminar interactivo de la tienda</span>
+                                <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+                                <span>Inventario sincronizado con canasta de compras</span>
                             </div>
                         </div>
 
@@ -552,19 +552,40 @@
                         </div>
 
                         <!-- Section 2: Orders Panel -->
-                        <div id="shop-panel-orders" style="display:none; padding:1.5rem; text-align:center;">
-                            <div style="max-width:480px; margin:0 auto; padding:2rem 1rem;">
-                                <div style="width:64px; height:64px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 1rem;">
-                                    <i class="fa-solid fa-cart-flatbed"></i>
+                        <div id="shop-panel-orders" style="display:none;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:0.25rem 0.25rem 0.75rem; border-bottom:1px solid var(--border-color); flex-wrap:wrap; gap:0.75rem;">
+                                <div>
+                                    <h4 style="font-family:'Playfair Display', serif; font-size:1.2rem; color:var(--text-main); margin:0 0 0.2rem;">
+                                        Pedidos de Clientes Recibidos
+                                    </h4>
+                                    <p style="font-size:0.82rem; color:var(--text-secondary); margin:0;">
+                                        Pedidos confirmados con pago efectuado desde la App. Las cantidades del inventario se descuentan automáticamente.
+                                    </p>
                                 </div>
-                                <h4 style="font-family:'Playfair Display', serif; font-size:1.3rem; margin-bottom:0.5rem; color:var(--text-main);">Bandeja de Pedidos de Clientes</h4>
-                                <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.5; margin-bottom:1.25rem;">
-                                    Aquí se recibirán automáticamente los pedidos realizados por tus clientas desde la App móvil con detalle de productos, cantidades y total a pagar. Por ahora, las clientas pueden consultar y pedir directamente a tu WhatsApp oficial.
-                                </p>
-                                <div style="display:inline-flex; align-items:center; gap:0.5rem; background:rgba(37,211,102,0.1); color:#15803d; padding:0.6rem 1.1rem; border-radius:20px; font-size:0.85rem; font-weight:700;">
-                                    <i class="fa-brands fa-whatsapp" style="font-size:1.1rem;"></i>
-                                    <span>Consultas y pedidos por WhatsApp activos en la App Cliente</span>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button id="btn-refresh-shop-orders" class="btn btn-secondary" style="font-size:0.82rem;" type="button">
+                                        <i class="fa-solid fa-rotate"></i> Actualizar
+                                    </button>
                                 </div>
+                            </div>
+
+                            <div class="custom-table-container">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>N° Pedido / Fecha</th>
+                                            <th>Cliente</th>
+                                            <th>Productos Solicitados</th>
+                                            <th>Entrega</th>
+                                            <th>Total Pagado</th>
+                                            <th>Estado / Pago</th>
+                                            <th style="text-align: right;">WhatsApp</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="shop-orders-table-body">
+                                        <!-- Populated dynamically by JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
@@ -1050,11 +1071,85 @@
         </div>
     </div>
 
+    <!-- ==========================================================================
+         MODAL 7: PRODUCT FORM (CREATE / EDIT SHOP PRODUCT)
+         ========================================================================== -->
+    <div id="modal-shop-product" class="modal-overlay">
+        <div class="modal-container" style="max-width: 580px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                    <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.05rem;">
+                        <i class="fa-solid fa-boxes-packing"></i>
+                    </div>
+                    <h3 id="modal-shop-product-title" style="margin:0;">Nuevo Producto para la Tienda</h3>
+                </div>
+                <button class="modal-close-btn" data-close-modal="modal-shop-product"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-shop-product">
+                <input type="hidden" id="shop-prod-form-id">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="shop-prod-name">Nombre del Producto *</label>
+                            <input type="text" id="shop-prod-name" class="form-control" placeholder="Ej. Mascarilla Reparadora Keratina 500ml" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="shop-prod-category">Categoría *</label>
+                            <select id="shop-prod-category" class="form-control" required>
+                                <option value="Capilar">Capilar</option>
+                                <option value="Uñas & Kapping">Uñas & Kapping</option>
+                                <option value="Cuidado Corporal">Cuidado Corporal</option>
+                                <option value="Facial & Spa">Facial & Spa</option>
+                                <option value="Accesorios">Accesorios</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="shop-prod-stock">Cantidad en Inventario (Stock) *</label>
+                            <input type="number" id="shop-prod-stock" class="form-control" min="0" value="10" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="shop-prod-cost">Precio de Costo (COP) *</label>
+                            <input type="number" id="shop-prod-cost" class="form-control" min="0" step="500" placeholder="Ej. 15000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="shop-prod-price">Precio de Venta al Público (COP) *</label>
+                            <input type="number" id="shop-prod-price" class="form-control" min="0" step="500" placeholder="Ej. 28000" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="shop-prod-desc">Descripción del Producto (Para las clientas)</label>
+                            <textarea id="shop-prod-desc" class="form-control" rows="2" placeholder="Beneficios, modo de uso, propiedades nutritivas..."></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="shop-prod-img">URL de Imagen del Producto</label>
+                            <input type="url" id="shop-prod-img" class="form-control" placeholder="https://ejemplo.com/foto-producto.jpg">
+                            <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem; display:block;">
+                                Opcional: deja en blanco para asignar una imagen profesional sugerida automáticamente.
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Margin calculation helper badge -->
+                    <div id="shop-prod-margin-box" style="margin-top:0.8rem; background:var(--bg-subtle); padding:0.75rem 1rem; border-radius:var(--radius-md); border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; font-size:0.82rem;">
+                        <span style="color:var(--text-secondary);"><i class="fa-solid fa-chart-line" style="color:var(--primary);"></i> Margen estimado de ganancia:</span>
+                        <strong id="shop-prod-margin-text" style="color:#15803d; font-size:0.95rem;">$0 (0% de margen)</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" data-close-modal="modal-shop-product">Cancelar</button>
+                    <button type="submit" class="btn-primary" id="btn-save-shop-product" style="background:linear-gradient(135deg, #f59e0b, #d97706); border-color:#d97706;">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Guardar Producto</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Notifications Container -->
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=19.0"></script>
-    <script src="js/app.js?v=19.0"></script>
+    <script src="js/data.js?v=21.0"></script>
+    <script src="js/app.js?v=21.0"></script>
 </body>
 </html>
