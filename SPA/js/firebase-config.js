@@ -137,26 +137,75 @@ class FirebaseCloudService {
             }
         }, err => console.log('Firestore settings sync error:', err));
 
-        // 5. Sync Clients (Cloud Firestore is the single source of truth)
+        // 5. Sync Clients (Smart Non-Destructive Bidirectional Merge & Data Protection)
         this.db.collection('lety_look_clients').onSnapshot(snapshot => {
             const cloudClients = [];
             snapshot.forEach(doc => {
                 cloudClients.push({ id: doc.id, ...doc.data() });
             });
             
-            // Cloud takes precedence directly
-            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(cloudClients));
+            // Read local clients and safety vault backup
+            const localRaw = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+            const vaultRaw = localStorage.getItem('lety_look_clients_vault_backup');
+            let local = [];
+            try {
+                local = localRaw ? JSON.parse(localRaw) : [];
+            } catch (e) {
+                local = [];
+            }
+            if ((!Array.isArray(local) || local.length === 0) && vaultRaw) {
+                try { local = JSON.parse(vaultRaw) || []; } catch(e) {}
+            }
 
-            // Refresh CURRENT_CLIENT if currently logged in user was modified or deleted
+            // CRITICAL PROTECTION:
+            // If the cloud snapshot is empty, NEVER wipe local clients!
+            // If local clients exist, preserve them and push them to the cloud.
+            if (cloudClients.length === 0) {
+                if (local.length > 0) {
+                    console.log('Base de datos en la nube de clientas vacía. Preservando información local y sincronizando a la nube...');
+                    this.uploadAllLocalDataToCloud();
+                }
+                return;
+            }
+
+            // Smart Merge: Preserve all local clients, their edited information and notes
+            const mergedMap = new Map();
+            local.forEach(c => {
+                if (c && c.id) mergedMap.set(c.id, c);
+            });
+
+            cloudClients.forEach(c => {
+                if (c && c.id) {
+                    const existing = mergedMap.get(c.id);
+                    if (existing) {
+                        // Compare update timestamps if present to avoid overwriting newer local edits
+                        const localUpdated = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+                        const cloudUpdated = c.updatedAt ? new Date(c.updatedAt).getTime() : 0;
+                        if (localUpdated > cloudUpdated) {
+                            // Local client has newer edits, keep local and re-sync to cloud
+                            mergedMap.set(c.id, { ...c, ...existing });
+                            this.saveCloudDocument('lety_look_clients', c.id, existing);
+                        } else {
+                            mergedMap.set(c.id, { ...existing, ...c });
+                        }
+                    } else {
+                        mergedMap.set(c.id, c);
+                    }
+                }
+            });
+
+            const merged = Array.from(mergedMap.values());
+            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(merged));
+            localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(merged));
+
+            // Refresh CURRENT_CLIENT safely if logged in user was updated
             const currentRaw = localStorage.getItem(STORAGE_KEYS.CURRENT_CLIENT);
             if (currentRaw) {
                 try {
                     const current = JSON.parse(currentRaw);
-                    const freshClient = cloudClients.find(c => c.id === current.id || (c.email && c.email.toLowerCase() === (current.email || '').toLowerCase()));
+                    const freshClient = merged.find(c => c.id === current.id || (c.email && c.email.toLowerCase() === (current.email || '').toLowerCase()));
                     if (freshClient) {
                         localStorage.setItem(STORAGE_KEYS.CURRENT_CLIENT, JSON.stringify(freshClient));
-                    } else {
-                        localStorage.removeItem(STORAGE_KEYS.CURRENT_CLIENT);
                     }
                 } catch (e) {}
             }
@@ -250,8 +299,10 @@ class FirebaseCloudService {
             const services = JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES)) || [];
             const staff = JSON.parse(localStorage.getItem(STORAGE_KEYS.STAFF)) || [];
             const appointments = JSON.parse(localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) || [];
-            const settings = JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS)) || {};
-            const clients = JSON.parse(localStorage.getItem(STORAGE_KEYS.CLIENTS)) || [];
+            let clients = JSON.parse(localStorage.getItem(STORAGE_KEYS.CLIENTS)) || [];
+            if (!Array.isArray(clients) || clients.length === 0) {
+                try { clients = JSON.parse(localStorage.getItem('lety_look_clients_vault_backup')) || []; } catch(e) {}
+            }
 
             services.forEach(s => {
                 const ref = this.db.collection('lety_look_services').doc(s.id);

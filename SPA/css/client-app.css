@@ -821,32 +821,39 @@ body {
 }
 
 .ticket-body {
+    background: #ffffff;
     padding: 1.5rem 1.25rem;
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
+    color: #0f172a;
 }
 
 .ticket-row {
     display: flex;
     justify-content: space-between;
-    border-bottom: 1px dashed var(--border-color);
-    padding-bottom: 0.5rem;
+    align-items: center;
+    border-bottom: 1px dashed #cbd5e1;
+    padding-bottom: 0.55rem;
 }
 
 .ticket-label {
-    color: var(--text-secondary);
+    color: #475569 !important;
+    font-weight: 600;
+    font-size: 0.88rem;
 }
 
 .ticket-val {
     font-weight: 700;
     text-align: right;
+    color: #0f172a !important;
 }
 
 .ticket-actions {
     padding: 1.25rem;
-    background: var(--bg-subtle);
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -954,4 +961,81 @@ body {
 
 .nav-tab-btn.active i {
     transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   TIENDA & BOUTIQUE CLIENT STYLES
+   ========================================================================== */
+.badge-nav-soon {
+    position: absolute;
+    top: -6px;
+    right: -16px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 0.5rem;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 5px rgba(245, 158, 11, 0.4);
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.shop-product-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: var(--transition);
+}
+
+.shop-product-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 89, 121, 0.12);
+}
+
+.shop-qty-control {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-subtle);
+    overflow: hidden;
+}
+
+.shop-qty-btn {
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.shop-qty-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.shop-qty-input {
+    width: 36px;
+    text-align: center;
+    border: none;
+    background: transparent;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-main);
 }

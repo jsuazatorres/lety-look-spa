@@ -106,6 +106,15 @@
                         <span>Clientes Registrados</span>
                     </button>
                 </li>
+                <li class="nav-item" data-view="shop">
+                    <button id="nav-shop-btn" type="button" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <i class="fa-solid fa-store"></i>
+                            <span>Tienda</span>
+                        </div>
+                        <span class="nav-badge-soon">Próximamente</span>
+                    </button>
+                </li>
                 <li class="nav-item" data-view="settings">
                     <button id="nav-settings-btn" type="button">
                         <i class="fa-solid fa-gear"></i>
@@ -402,13 +411,17 @@
                             <i class="fa-solid fa-magnifying-glass"></i>
                             <input type="text" id="clients-search-input" placeholder="Buscar clienta por nombre, WhatsApp o correo...">
                         </div>
-                        <div style="display:flex; align-items:center; gap:1rem;">
+                        <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
                             <div style="font-size:0.9rem; font-weight:700; color:var(--text-muted);" id="clients-total-counter">
                                 Total Registradas: 0
                             </div>
-                            <button id="btn-clear-all-clients" type="button" class="btn-secondary" style="border-color:#ef4444; color:#ef4444; padding:0.45rem 0.85rem; font-size:0.8rem;" title="Eliminar todos los clientes registrados y empezar desde cero">
+                            <button id="btn-export-clients-json" type="button" class="btn-secondary" style="border-color:var(--primary); color:var(--primary); padding:0.45rem 0.85rem; font-size:0.8rem;" title="Descargar copia de seguridad de todas las clientas">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <span>Respaldar Clientas</span>
+                            </button>
+                            <button id="btn-clear-all-clients" type="button" class="btn-secondary" style="border-color:#ef4444; color:#ef4444; padding:0.45rem 0.85rem; font-size:0.8rem;" title="Eliminar todos los clientes (Solo con orden explícita)">
                                 <i class="fa-solid fa-trash-can"></i>
-                                <span>Vaciar Directorio</span>
+                                <span>Vaciar Directorio (Con Orden)</span>
                             </button>
                         </div>
                     </div>
@@ -430,6 +443,154 @@
                                 <!-- Populated dynamically -->
                             </tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- 8. TIENDA & CONTROL DE PRODUCTOS (PRÓXIMAMENTE) VIEW -->
+                <section id="view-shop" class="view-section">
+                    <!-- Header Hero Banner for Tienda -->
+                    <div class="dash-card" style="background:linear-gradient(135deg, rgba(212,89,121,0.08), rgba(245,158,11,0.08)); border:1px solid rgba(245,158,11,0.3); margin-bottom:1.5rem; position:relative; overflow:hidden;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <div style="display:inline-flex; align-items:center; gap:0.5rem; background:rgba(245,158,11,0.15); color:#d97706; padding:0.3rem 0.8rem; border-radius:20px; font-size:0.78rem; font-weight:800; margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fa-solid fa-sparkles"></i> Módulo en Fase de Preparación &bull; Próximamente
+                                </div>
+                                <h2 style="font-family:'Playfair Display', serif; font-size:1.6rem; color:var(--text-main); margin-bottom:0.4rem;">
+                                    Control de Tienda, Inventario & Pedidos
+                                </h2>
+                                <p style="color:var(--text-secondary); max-width:680px; font-size:0.9rem; line-height:1.5;">
+                                    Centraliza aquí el catálogo comercial de LETY LOOK: gestiona cantidades de stock en tiempo real, realiza ajustes rápidos de precios y márgenes, y controla los pedidos solicitados por tus clientas.
+                                </p>
+                            </div>
+                            <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-primary" id="btn-shop-preview-add" style="background:linear-gradient(135deg, #f59e0b, #d97706); border:none; box-shadow:0 4px 15px rgba(245,158,11,0.3);">
+                                    <i class="fa-solid fa-plus-circle"></i> Nuevo Producto (Demo)
+                                </button>
+                                <a href="cliente.html" target="_blank" class="btn btn-outline" style="border-color:var(--primary); color:var(--primary);">
+                                    <i class="fa-solid fa-mobile-screen"></i> Ver Tienda en App Cliente
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4 Pillar Control Cards -->
+                    <div class="kpi-grid" style="margin-bottom:1.5rem;">
+                        <div class="kpi-card">
+                            <div class="kpi-icon" style="background:#fef3c7; color:#d97706;"><i class="fa-solid fa-boxes-stacked"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Productos & Stock</span>
+                                <span class="kpi-value" id="shop-kpi-products-count">5 Referencias</span>
+                                <span class="kpi-trend positive"><i class="fa-solid fa-check"></i> 93 unidades totales</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon" style="background:#ecfdf5; color:#059669;"><i class="fa-solid fa-tags"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Ajuste de Precios</span>
+                                <span class="kpi-value">Margen 42%</span>
+                                <span class="kpi-trend positive"><i class="fa-solid fa-arrow-up"></i> Rentabilidad fijada</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-bag-shopping"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Pedidos Recibidos</span>
+                                <span class="kpi-value">0 Pendientes</span>
+                                <span class="kpi-trend neutral"><i class="fa-solid fa-clock"></i> Módulo en preparación</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon" style="background:#fce7f3; color:#db2777;"><i class="fa-brands fa-whatsapp"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Pedidos por WhatsApp</span>
+                                <span class="kpi-value">Activo</span>
+                                <span class="kpi-trend positive"><i class="fa-solid fa-bolt"></i> Consultas directas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Sub-tabs for Shop Admin -->
+                    <div class="dash-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:1rem; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
+                            <div class="segmented-control" style="display:flex; gap:0.5rem; background:var(--bg-subtle); padding:0.35rem; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                                <button type="button" class="tab-pill-btn active" id="btn-shop-tab-products" style="padding:0.45rem 1rem; border-radius:var(--radius-sm); font-size:0.85rem; font-weight:700; border:none; cursor:pointer; background:var(--bg-surface); color:var(--text-main); box-shadow:0 2px 5px rgba(0,0,0,0.06);">
+                                    <i class="fa-solid fa-boxes-packing"></i> Inventario & Stock
+                                </button>
+                                <button type="button" class="tab-pill-btn" id="btn-shop-tab-orders" style="padding:0.45rem 1rem; border-radius:var(--radius-sm); font-size:0.85rem; font-weight:700; border:none; cursor:pointer; background:transparent; color:var(--text-muted);">
+                                    <i class="fa-solid fa-clipboard-list"></i> Pedidos de Clientes (0)
+                                </button>
+                                <button type="button" class="tab-pill-btn" id="btn-shop-tab-pricing" style="padding:0.45rem 1rem; border-radius:var(--radius-sm); font-size:0.85rem; font-weight:700; border:none; cursor:pointer; background:transparent; color:var(--text-muted);">
+                                    <i class="fa-solid fa-calculator"></i> Ajustes de Precios
+                                </button>
+                            </div>
+                            <div style="font-size:0.82rem; color:var(--text-muted); display:flex; align-items:center; gap:0.4rem;">
+                                <i class="fa-solid fa-circle-info" style="color:var(--primary);"></i>
+                                <span>Control preliminar interactivo de la tienda</span>
+                            </div>
+                        </div>
+
+                        <!-- Section 1: Products & Stock Table -->
+                        <div id="shop-panel-products">
+                            <div class="custom-table-container">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Categoría</th>
+                                            <th>Stock / Cantidad</th>
+                                            <th>Precio Costo</th>
+                                            <th>Precio Venta</th>
+                                            <th>Estado Stock</th>
+                                            <th style="text-align: right;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="shop-products-table-body">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Orders Panel -->
+                        <div id="shop-panel-orders" style="display:none; padding:1.5rem; text-align:center;">
+                            <div style="max-width:480px; margin:0 auto; padding:2rem 1rem;">
+                                <div style="width:64px; height:64px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 1rem;">
+                                    <i class="fa-solid fa-cart-flatbed"></i>
+                                </div>
+                                <h4 style="font-family:'Playfair Display', serif; font-size:1.3rem; margin-bottom:0.5rem; color:var(--text-main);">Bandeja de Pedidos de Clientes</h4>
+                                <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.5; margin-bottom:1.25rem;">
+                                    Aquí se recibirán automáticamente los pedidos realizados por tus clientas desde la App móvil con detalle de productos, cantidades y total a pagar. Por ahora, las clientas pueden consultar y pedir directamente a tu WhatsApp oficial.
+                                </p>
+                                <div style="display:inline-flex; align-items:center; gap:0.5rem; background:rgba(37,211,102,0.1); color:#15803d; padding:0.6rem 1.1rem; border-radius:20px; font-size:0.85rem; font-weight:700;">
+                                    <i class="fa-brands fa-whatsapp" style="font-size:1.1rem;"></i>
+                                    <span>Consultas y pedidos por WhatsApp activos en la App Cliente</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Pricing Panel -->
+                        <div id="shop-panel-pricing" style="display:none; padding:1rem 0;">
+                            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+                                <div style="background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.25rem;">
+                                    <h5 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-main);">Ajuste Masivo de Precios</h5>
+                                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:1rem;">Aumentar o ajustar precios de venta por porcentaje en el catálogo.</p>
+                                    <div style="display:flex; gap:0.5rem;">
+                                        <input type="number" placeholder="Ej: 5%" class="form-control" style="width:110px;" value="5" id="input-mass-price-adj">
+                                        <button type="button" class="btn btn-outline" style="font-size:0.82rem;" id="btn-apply-mass-price">
+                                            <i class="fa-solid fa-percent"></i> Aplicar Ajuste
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style="background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.25rem;">
+                                    <h5 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-main);">Alerta de Cantidad Mínima</h5>
+                                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:1rem;">Notificarme cuando un producto tenga un stock inferior a:</p>
+                                    <div style="display:flex; gap:0.5rem;">
+                                        <input type="number" class="form-control" style="width:110px;" value="3" id="input-min-stock-alert">
+                                        <span style="display:flex; align-items:center; font-size:0.85rem; font-weight:600; color:var(--text-muted);">unidades</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -843,6 +1004,49 @@
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" data-close-modal="modal-client-history">Cerrar</button>
             </div>
+    <!-- ==========================================================================
+         MODAL 6: EDIT CLIENT INFORMATION (ADMIN)
+         ========================================================================== -->
+    <div id="modal-edit-client" class="modal-overlay">
+        <div class="modal-container" style="max-width: 560px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                    <i class="fa-solid fa-user-pen" style="color:var(--primary); font-size:1.25rem;"></i>
+                    <h3 style="margin:0;">Editar Información de la Clienta</h3>
+                </div>
+                <button class="modal-close-btn" data-close-modal="modal-edit-client"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-edit-client">
+                <div class="modal-body">
+                    <input type="hidden" id="edit-client-id">
+                    <div class="form-group" style="margin-bottom:1.1rem;">
+                        <label for="edit-client-name" style="font-weight:700; display:block; margin-bottom:0.35rem;">Nombre Completo *</label>
+                        <input type="text" id="edit-client-name" class="form-control" required placeholder="Nombre de la clienta">
+                    </div>
+                    <div class="form-group" style="margin-bottom:1.1rem;">
+                        <label for="edit-client-phone" style="font-weight:700; display:block; margin-bottom:0.35rem;">Teléfono / WhatsApp *</label>
+                        <input type="tel" id="edit-client-phone" class="form-control" required placeholder="Ej: 3138869676">
+                    </div>
+                    <div class="form-group" style="margin-bottom:1.1rem;">
+                        <label for="edit-client-email" style="font-weight:700; display:block; margin-bottom:0.35rem;">Correo Electrónico (Opcional)</label>
+                        <input type="email" id="edit-client-email" class="form-control" placeholder="correo@ejemplo.com">
+                    </div>
+                    <div class="form-group" style="margin-bottom:1.1rem;">
+                        <label for="edit-client-notes" style="font-weight:700; display:block; margin-bottom:0.35rem;">Notas / Preferencias Personales</label>
+                        <textarea id="edit-client-notes" class="form-control" rows="3" placeholder="Alergias, tonos favoritos, observaciones personalizadas..."></textarea>
+                    </div>
+                    <div style="background:var(--bg-subtle, #f8fafc); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:0.85rem; font-size:0.8rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.6rem;">
+                        <i class="fa-solid fa-shield-halved" style="color:var(--primary); font-size:1.1rem;"></i>
+                        <span>Los cambios se guardan permanentemente en tu dispositivo y se respaldan automáticamente en la nube sin riesgo de pérdida.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" data-close-modal="modal-edit-client">Cancelar</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -850,7 +1054,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=16.0"></script>
-    <script src="js/app.js?v=16.0"></script>
+    <script src="js/data.js?v=19.0"></script>
+    <script src="js/app.js?v=19.0"></script>
 </body>
 </html>

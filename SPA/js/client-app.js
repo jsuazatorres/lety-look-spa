@@ -338,6 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Tab-specific renders
         if (tabId === 'tab-explore') renderExploreTab();
         if (tabId === 'tab-book') renderWizardStep(clientState.wizardStep);
+        if (tabId === 'tab-shop') renderShopClientTab();
         if (tabId === 'tab-staff') renderStaffDirectory();
         if (tabId === 'tab-my-appointments') renderMyAppointments();
         if (tabId === 'tab-account') renderAccountTab();
@@ -1080,6 +1081,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Edit Client Profile Data Modal Handlers
+    document.getElementById('btn-open-edit-client-profile')?.addEventListener('click', () => {
+        const currentClient = window.dataManager.getCurrentClient();
+        if (!currentClient) return;
+
+        document.getElementById('edit-profile-name').value = currentClient.name || '';
+        document.getElementById('edit-profile-phone').value = currentClient.phone || '';
+        document.getElementById('edit-profile-email').value = currentClient.email || '';
+        document.getElementById('edit-profile-password').value = '';
+
+        const modal = document.getElementById('modal-client-edit-profile');
+        if (modal) modal.style.display = 'flex';
+    });
+
+    function closeClientEditProfileModal() {
+        const modal = document.getElementById('modal-client-edit-profile');
+        if (modal) modal.style.display = 'none';
+    }
+
+    document.getElementById('btn-close-edit-profile-modal')?.addEventListener('click', closeClientEditProfileModal);
+    document.getElementById('btn-cancel-edit-profile')?.addEventListener('click', closeClientEditProfileModal);
+
+    document.getElementById('form-client-edit-profile')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const currentClient = window.dataManager.getCurrentClient();
+        if (!currentClient) return;
+
+        const name = document.getElementById('edit-profile-name').value.trim();
+        const phone = document.getElementById('edit-profile-phone').value.trim();
+        const email = document.getElementById('edit-profile-email').value.trim();
+        const newPassword = document.getElementById('edit-profile-password').value;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>Guardando...</span> <i class="fa-solid fa-spinner fa-spin"></i>';
+        }
+
+        const payload = { name, phone, email };
+        if (newPassword && newPassword.length >= 4) {
+            payload.password = newPassword;
+        }
+
+        const res = await window.dataManager.updateClient(currentClient.id, payload);
+        if (res.success) {
+            closeClientEditProfileModal();
+            updateAuthUI();
+            alert('¡Tus datos personales fueron actualizados y respaldados de forma segura!');
+        } else {
+            alert(res.message || 'Error al actualizar tus datos');
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Guardar Cambios</span> <i class="fa-solid fa-floppy-disk"></i>';
+        }
+    });
+
     // Register avatar preview
     let regAvatarDataUrl = null;
     document.getElementById('reg-avatar-file')?.addEventListener('change', async (e) => {
@@ -1306,6 +1365,218 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // =========================================================================
+    // BOUTIQUE & TIENDA DE PRODUCTOS (PRÓXIMAMENTE) - CLIENT CONTROLLER
+    // =========================================================================
+    const CLIENT_SHOP_CATALOG = [
+        {
+            id: 'prod-1',
+            name: 'Óleo Capilar Reparador Argán & Keratina 60ml',
+            category: 'Capilar',
+            price: 38000,
+            desc: 'Tratamiento intensivo con aceite de argán puro. Sella puntas, elimina el frizz y aporta brillo espejo sin efecto graso.',
+            img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=350&q=80'
+        },
+        {
+            id: 'prod-2',
+            name: 'Kit Kapping Gel Fortalecedor Lety Look',
+            category: 'Uñas & Kapping',
+            price: 55000,
+            desc: 'Bruma y gel fortalecedor de alta densidad para proteger uñas débiles, quebradizas o recién retiradas de acrílico.',
+            img: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=350&q=80'
+        },
+        {
+            id: 'prod-3',
+            name: 'Exfoliante Spa Hidratante Frutos Rojos 250g',
+            category: 'Cuidado Corporal',
+            price: 32000,
+            desc: 'Remueve células muertas con micropartículas naturales y manteca de karité. Deja la piel sedosa y con aroma dulce cautivador.',
+            img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=350&q=80'
+        },
+        {
+            id: 'prod-4',
+            name: 'Esmalte Semipermanente Gel UV Colección Lujo',
+            category: 'Uñas & Kapping',
+            price: 25000,
+            desc: 'Pigmentación ultra-intensa con secado en lámpara UV/LED. Acabado brillante con duración garantizada de hasta 21 días.',
+            img: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=350&q=80'
+        },
+        {
+            id: 'prod-5',
+            name: 'Serum Reparador Cutículas con Vitamina E',
+            category: 'Uñas & Kapping',
+            price: 20000,
+            desc: 'Fórmula nutritiva con aplicador en gotero. Nutre la raíz de la uña, previene padrastros y estimula el crecimiento saludable.',
+            img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=350&q=80'
+        }
+    ];
+
+    let clientShopSelectedCategory = 'all';
+    let clientShopCart = {}; // { prodId: quantity }
+
+    function renderShopClientTab() {
+        const grid = document.getElementById('client-shop-products-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        let items = CLIENT_SHOP_CATALOG;
+        if (clientShopSelectedCategory !== 'all') {
+            items = items.filter(p => p.category === clientShopSelectedCategory);
+        }
+
+        items.forEach(prod => {
+            const card = document.createElement('div');
+            card.className = 'shop-product-card';
+            const currentQty = clientShopCart[prod.id] || 1;
+
+            card.innerHTML = `
+                <div style="display:flex; gap:0.85rem; align-items:flex-start;">
+                    <img src="${prod.img}" alt="${prod.name}" style="width:75px; height:75px; border-radius:var(--radius-md); object-fit:cover; border:1px solid var(--border-color); flex-shrink:0;" onerror="this.src='https://ui-avatars.com/api/?name=Prod&background=d45979&color=fff'">
+                    <div style="flex:1;">
+                        <span style="font-size:0.68rem; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">${prod.category}</span>
+                        <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin:0.15rem 0 0.25rem; line-height:1.25;">${prod.name}</h4>
+                        <div style="font-size:1.05rem; font-weight:800; color:var(--primary);">${formatCurrency(prod.price)}</div>
+                    </div>
+                </div>
+                <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.35; margin:0;">${prod.desc}</p>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; border-top:1px solid var(--border-color); padding-top:0.75rem; margin-top:0.25rem;">
+                    <div class="shop-qty-control">
+                        <button class="shop-qty-btn btn-client-qty-minus" data-id="${prod.id}" type="button">-</button>
+                        <input type="text" class="shop-qty-input" id="qty-input-${prod.id}" value="${currentQty}" readonly>
+                        <button class="shop-qty-btn btn-client-qty-plus" data-id="${prod.id}" type="button">+</button>
+                    </div>
+                    <div style="display:flex; gap:0.4rem;">
+                        <button class="btn-book-service btn-client-ask-wa" data-id="${prod.id}" type="button" style="padding:0.45rem 0.75rem; font-size:0.75rem; background:#25d366; border-color:#25d366; color:#fff;" title="Consultar por WhatsApp">
+                            <i class="fa-brands fa-whatsapp"></i> Consultar
+                        </button>
+                        <button class="btn-hero-book btn-client-add-order" data-id="${prod.id}" type="button" style="padding:0.45rem 0.75rem; font-size:0.75rem;">
+                            <i class="fa-solid fa-cart-plus"></i> Agregar
+                        </button>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        // Listeners for quantity and actions
+        grid.querySelectorAll('.btn-client-qty-plus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const input = document.getElementById(`qty-input-${id}`);
+                let val = parseInt(input.value) || 1;
+                val += 1;
+                input.value = val;
+                if (clientShopCart[id]) {
+                    clientShopCart[id] = val;
+                    updateClientOrderSummaryBar();
+                }
+            });
+        });
+
+        grid.querySelectorAll('.btn-client-qty-minus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const input = document.getElementById(`qty-input-${id}`);
+                let val = parseInt(input.value) || 1;
+                if (val > 1) {
+                    val -= 1;
+                    input.value = val;
+                    if (clientShopCart[id]) {
+                        clientShopCart[id] = val;
+                        updateClientOrderSummaryBar();
+                    }
+                }
+            });
+        });
+
+        grid.querySelectorAll('.btn-client-ask-wa').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
+                if (!prod) return;
+                const qty = parseInt(document.getElementById(`qty-input-${id}`)?.value) || 1;
+                const total = prod.price * qty;
+                const msg = `¡Hola LETY LOOK! ✨ Vi este producto en la tienda de la App y me interesa consultar disponibilidad:\n\n*${prod.name}*\nCantidad: ${qty} unidad(es)\nValor estimado: ${formatCurrency(total)}\n\n¿Tienen entrega o cómo puedo coordinar la compra? ¡Gracias!`;
+                window.open(`https://wa.me/573138869676?text=${encodeURIComponent(msg)}`, '_blank');
+            });
+        });
+
+        grid.querySelectorAll('.btn-client-add-order').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
+                if (!prod) return;
+                const qty = parseInt(document.getElementById(`qty-input-${id}`)?.value) || 1;
+                clientShopCart[id] = (clientShopCart[id] || 0) + qty;
+                updateClientOrderSummaryBar();
+                alert(`¡Se agregaron ${qty}x "${prod.name}" a tu consulta de pedido!`);
+            });
+        });
+    }
+
+    function updateClientOrderSummaryBar() {
+        const bar = document.getElementById('client-order-summary-bar');
+        const preview = document.getElementById('client-order-total-preview');
+        if (!bar || !preview) return;
+
+        const entries = Object.entries(clientShopCart);
+        if (entries.length === 0) {
+            bar.style.display = 'none';
+            return;
+        }
+
+        let total = 0;
+        let totalItems = 0;
+        entries.forEach(([id, qty]) => {
+            const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
+            if (prod) {
+                total += prod.price * qty;
+                totalItems += qty;
+            }
+        });
+
+        preview.textContent = `${formatCurrency(total)} (${totalItems} ${totalItems === 1 ? 'prod.' : 'prods.'})`;
+        bar.style.display = 'flex';
+    }
+
+    // Category filter click
+    document.querySelectorAll('#client-shop-category-slider .cat-btn-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#client-shop-category-slider .cat-btn-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            clientShopSelectedCategory = btn.getAttribute('data-shop-cat') || 'all';
+            renderShopClientTab();
+        });
+    });
+
+    // Send multi-product order inquiry through WhatsApp
+    document.getElementById('btn-client-send-shop-order')?.addEventListener('click', () => {
+        const entries = Object.entries(clientShopCart);
+        if (entries.length === 0) return;
+
+        let total = 0;
+        let textList = '';
+        entries.forEach(([id, qty]) => {
+            const prod = CLIENT_SHOP_CATALOG.find(p => p.id === id);
+            if (prod) {
+                const sub = prod.price * qty;
+                total += sub;
+                textList += `• ${qty}x ${prod.name} (${formatCurrency(sub)})\n`;
+            }
+        });
+
+        const currentClient = window.dataManager.getCurrentClient();
+        const clientName = currentClient ? currentClient.name : 'Cliente';
+
+        const msg = `¡Hola LETY LOOK! ✨ Te saluda *${clientName}*. Deseo consultar y realizar el siguiente pedido de productos desde la tienda de la App:\n\n${textList}\n*Total Estimado: ${formatCurrency(total)}*\n\n¿Me confirman disponibilidad y forma de entrega? ¡Muchas gracias!`;
+        window.open(`https://wa.me/573138869676?text=${encodeURIComponent(msg)}`, '_blank');
+    });
+
+    // Banner from Explore tab to shop
+    document.getElementById('btn-banner-go-to-shop')?.addEventListener('click', () => {
+        switchTab('tab-shop');
+    });
 
     // Copy Spa Address Action
     document.getElementById('btn-copy-address')?.addEventListener('click', () => {

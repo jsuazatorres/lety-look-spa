@@ -433,6 +433,27 @@ input, select, textarea {
     color: white;
 }
 
+.nav-badge-soon {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+    margin-left: auto;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+
+.nav-item.active .nav-badge-soon {
+    background: #ffffff;
+    color: #b45309;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .sidebar-footer {
     padding-top: 1.5rem;
     border-top: 1px solid var(--border-color);

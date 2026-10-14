@@ -332,8 +332,36 @@ class SpaDataManager {
         currentSettings.slogan = 'Belleza Integral';
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ ...DEFAULT_SETTINGS, ...currentSettings }));
 
-        if (!localStorage.getItem(STORAGE_KEYS.CLIENTS)) {
-            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(DEFAULT_CLIENTS));
+        // CRITICAL DATA PROTECTION: Client personal information vault
+        const currentClientsRaw = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+        const vaultBackupRaw = localStorage.getItem('lety_look_clients_vault_backup');
+        let clientsList = [];
+        try {
+            clientsList = currentClientsRaw ? JSON.parse(currentClientsRaw) : [];
+        } catch (e) {
+            clientsList = [];
+        }
+
+        // If local clients was wiped or missing, auto-recover from vault backup
+        if (!Array.isArray(clientsList) || clientsList.length === 0) {
+            if (vaultBackupRaw) {
+                try {
+                    const restored = JSON.parse(vaultBackupRaw);
+                    if (Array.isArray(restored) && restored.length > 0) {
+                        console.log('Restaurando clientas desde el respaldo de seguridad vault...');
+                        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(restored));
+                        clientsList = restored;
+                    }
+                } catch (e) {}
+            }
+            if (clientsList.length === 0 && !currentClientsRaw) {
+                localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(DEFAULT_CLIENTS));
+            }
+        } else {
+            // Keep vault backup synchronized
+            try {
+                localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clientsList));
+            } catch (e) {}
         }
     }
 
@@ -473,6 +501,7 @@ class SpaDataManager {
         clients.push(newClient);
         try {
             localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+            localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clients));
         } catch (e) {
             console.warn('LocalStorage quota warning in registerClient:', e);
         }
@@ -595,6 +624,7 @@ class SpaDataManager {
 
         try {
             localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+            localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clients));
         } catch (e) {
             console.warn('LocalStorage setItem quota warning, pruning base64:', e);
             clients.forEach(c => {
@@ -604,6 +634,7 @@ class SpaDataManager {
             });
             try {
                 localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+                localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clients));
             } catch (e2) {}
         }
 
@@ -658,7 +689,9 @@ class SpaDataManager {
         const client = clients.find(c => c.id === clientId);
         if (client) {
             client.avatar = newAvatarUrl;
+            client.updatedAt = new Date().toISOString();
             localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+            localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clients));
             
             const current = this.getCurrentClient();
             if (current && current.id === clientId) {
@@ -674,11 +707,103 @@ class SpaDataManager {
         return { success: false, message: 'Cliente no encontrado' };
     }
 
+    // Update Client Personal Information (Full safe edit with cloud & local sync)
+    async updateClient(id, updatedData) {
+        if (!id) return { success: false, message: 'ID de cliente inválido.' };
+        let clients = this.getClients();
+        const idx = clients.findIndex(c => c && c.id === id);
+        if (idx === -1) {
+            return { success: false, message: 'No se encontró la clienta para editar.' };
+        }
+
+        // Duplicate validation if email or phone is updated
+        const cleanEmail = updatedData.email ? String(updatedData.email).trim().toLowerCase() : '';
+        const cleanPhone = updatedData.phone ? String(updatedData.phone).replace(/\D/g, '') : '';
+
+        const duplicate = clients.find(c => 
+            c && c.id !== id && (
+                (cleanEmail && c.email && c.email.toLowerCase() === cleanEmail) ||
+                (cleanPhone && cleanPhone.length >= 7 && c.phone && String(c.phone).replace(/\D/g, '') === cleanPhone)
+            )
+        );
+
+        if (duplicate) {
+            return { success: false, message: 'Ya existe otra clienta registrada con este correo o WhatsApp.' };
+        }
+
+        const oldClient = clients[idx];
+        const mergedClient = {
+            ...oldClient,
+            ...updatedData,
+            name: (updatedData.name || oldClient.name || '').trim(),
+            email: cleanEmail !== undefined ? cleanEmail : (oldClient.email || ''),
+            phone: cleanPhone || updatedData.phone || oldClient.phone || '',
+            notes: updatedData.notes !== undefined ? updatedData.notes : (oldClient.notes || ''),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (updatedData.password) {
+            mergedClient.password = updatedData.password;
+        }
+
+        clients[idx] = mergedClient;
+
+        // Persist locally and in the safety backup vault
+        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+        localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clients));
+
+        // Update current client session if this is the active user
+        const current = this.getCurrentClient();
+        if (current && (current.id === id || (current.email && current.email.toLowerCase() === (mergedClient.email || '').toLowerCase()))) {
+            this.setCurrentClient(mergedClient);
+        }
+
+        // Synchronize updated client information across all appointments
+        let appointments = this.getAppointments();
+        let aptChanged = false;
+        appointments = appointments.map(apt => {
+            if (apt.clientId === id || (mergedClient.email && apt.clientEmail === mergedClient.email)) {
+                aptChanged = true;
+                return {
+                    ...apt,
+                    clientName: mergedClient.name,
+                    clientPhone: mergedClient.phone,
+                    clientEmail: mergedClient.email
+                };
+            }
+            return apt;
+        });
+
+        if (aptChanged) {
+            localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appointments));
+            if (window.cloudService && window.cloudService.isInitialized) {
+                // Sync updated appointments in cloud
+                appointments.filter(a => a.clientId === id).forEach(a => {
+                    window.cloudService.saveCloudDocument('lety_look_appointments', a.id, a);
+                });
+            }
+        }
+
+        // Cloud Firestore sync
+        if (window.cloudService && window.cloudService.isInitialized) {
+            await window.cloudService.saveCloudDocument('lety_look_clients', id, mergedClient);
+        }
+
+        return { success: true, client: mergedClient };
+    }
+
+    // Export Client Directory backup
+    exportClientsBackup() {
+        const clients = this.getClients();
+        return JSON.stringify(clients, null, 2);
+    }
+
     async deleteClient(id) {
         let clients = this.getClients();
         const clientToDelete = clients.find(c => c && c.id === id);
         clients = clients.filter(c => c && c.id !== id);
         localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+        localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clients));
         
         const current = this.getCurrentClient();
         if (current && (current.id === id || (clientToDelete && clientToDelete.email && current.email === clientToDelete.email))) {
@@ -693,6 +818,7 @@ class SpaDataManager {
 
     async clearAllClients() {
         localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify([]));
+        localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify([]));
         this.logoutClient();
         if (window.cloudService && window.cloudService.isInitialized) {
             await window.cloudService.clearCloudCollection('lety_look_clients');
@@ -763,6 +889,7 @@ class SpaDataManager {
                 };
                 clients.push(newClient);
                 localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+                localStorage.setItem('lety_look_clients_vault_backup', JSON.stringify(clients));
                 if (window.cloudService && window.cloudService.isInitialized) {
                     window.cloudService.saveCloudDocument('lety_look_clients', newClient.id, newClient);
                 }
@@ -814,7 +941,8 @@ class SpaDataManager {
         localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(DEFAULT_STAFF));
         localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(DEFAULT_APPOINTMENTS));
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
-        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(DEFAULT_CLIENTS));
+        // CRITICAL DATA PROTECTION: Client personal information is NEVER deleted when resetting demo settings/services
+        console.log('Datos de ejemplo restaurados. Las clientas registradas y sus datos personales se mantuvieron intactos.');
     }
 }
 

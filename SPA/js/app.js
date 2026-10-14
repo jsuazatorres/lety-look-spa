@@ -140,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         services: { title: 'Catálogo de Servicios', subtitle: 'Manicura, pedicura, peluquería y tintura con precios' },
         staff: { title: 'Profesionales & Horarios', subtitle: 'Equipo de especialistas, turnos y áreas de atención' },
         clients: { title: 'Directorio de Clientes Registrados', subtitle: 'Listado consolidado de clientas, historial de visitas y contacto' },
+        shop: { title: 'Tienda & Control de Productos (Próximamente)', subtitle: 'Inventario, stock de cantidades, ajuste de precios y gestión de pedidos' },
         settings: { title: 'Configuración & Sistema', subtitle: 'Datos del spa y opciones de copia de seguridad' }
     };
 
@@ -192,6 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'clients':
                 renderClientsList();
+                break;
+            case 'shop':
+                renderShopAdminView();
                 break;
             case 'settings':
                 renderSettings();
@@ -1402,10 +1406,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-whatsapp btn-client-row-wa" data-phone="${c.phone}" data-name="${c.name}" title="Chatear por WhatsApp">
                             <i class="fa-brands fa-whatsapp"></i>
                         </button>
+                        <button class="btn-icon btn-client-row-edit" data-id="${c.id}" title="Editar Información Personal">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
                         <button class="btn-icon btn-client-row-history" data-id="${c.id}" title="Ver Historial de Citas">
                             <i class="fa-solid fa-receipt"></i>
                         </button>
-                        <button class="btn-icon btn-icon-danger btn-client-row-delete" data-id="${c.id}" title="Eliminar de la lista">
+                        <button class="btn-icon btn-icon-danger btn-client-row-delete" data-id="${c.id}" title="Eliminar clienta (Requiere confirmación explícita)">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
@@ -1427,6 +1434,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Edit client personal details
+        tbody.querySelectorAll('.btn-client-row-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const clientId = btn.getAttribute('data-id');
+                openEditClientModal(clientId);
+            });
+        });
+
         // View client appointments history
         tbody.querySelectorAll('.btn-client-row-history').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1435,36 +1450,97 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Delete single client
+        // Delete single client ONLY WITH EXPLICIT ORDER
         tbody.querySelectorAll('.btn-client-row-delete').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const clientId = btn.getAttribute('data-id');
-                if (confirm('¿Deseas eliminar permanentemente a esta clienta del registro y de la nube?')) {
+                const client = window.dataManager.getClientById(clientId);
+                const clientName = client ? client.name : 'esta clienta';
+                if (confirm(`¿Das la orden explícita de eliminar definitivamente a "${clientName}" y toda su información personal?\n\nEsta acción no se puede deshacer.`)) {
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                     await window.dataManager.deleteClient(clientId);
-                    showToast('Clienta eliminada permanentemente', 'info');
+                    showToast(`Clienta "${clientName}" eliminada bajo tu orden explícita`, 'info');
                     renderClientsList();
                 }
             });
         });
     }
 
-    // Clear all registered clients to start fresh
+    // Modal Edit Client Form logic
+    function openEditClientModal(clientId) {
+        const client = window.dataManager.getClientById(clientId);
+        if (!client) return;
+
+        document.getElementById('edit-client-id').value = client.id;
+        document.getElementById('edit-client-name').value = client.name || '';
+        document.getElementById('edit-client-phone').value = client.phone || '';
+        document.getElementById('edit-client-email').value = client.email || '';
+        document.getElementById('edit-client-notes').value = client.notes || '';
+
+        openModal('modal-edit-client');
+    }
+
+    document.getElementById('form-edit-client')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clientId = document.getElementById('edit-client-id').value;
+        const name = document.getElementById('edit-client-name').value.trim();
+        const phone = document.getElementById('edit-client-phone').value.trim();
+        const email = document.getElementById('edit-client-email').value.trim();
+        const notes = document.getElementById('edit-client-notes').value.trim();
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+        }
+
+        const res = await window.dataManager.updateClient(clientId, { name, phone, email, notes });
+        if (res.success) {
+            closeModal('modal-edit-client');
+            showToast('Información de la clienta actualizada y protegida', 'success');
+            renderClientsList();
+        } else {
+            showToast(res.message || 'Error al actualizar datos de la clienta', 'error');
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Cambios';
+        }
+    });
+
+    // Export Client Directory Backup
+    document.getElementById('btn-export-clients-json')?.addEventListener('click', () => {
+        const dataStr = window.dataManager.exportClientsBackup();
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lety_look_clientas_respaldo_${getTodayString()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Respaldo de información de clientas descargado con éxito', 'success');
+    });
+
+    // Clear all registered clients to start fresh - REQUIRES EXPLICIT WRITTEN ORDER
     document.getElementById('btn-clear-all-clients')?.addEventListener('click', async () => {
-        if (confirm('¿Estás seguro de que deseas ELIMINAR A TODAS las clientas registradas de la base de datos (tanto local como en la nube) para empezar desde cero?\n\nEsta acción no se puede deshacer.')) {
+        const promptOrder = prompt('⚠️ ACCIÓN DE BORRADO PROTEGIDA\n\nPor seguridad de tu negocio, los datos personales de tus clientes están protegidos contra borrado involuntario.\n\nSi deseas dar la orden explícita e irrevocable de vaciar todo el directorio de clientas, escribe exactamente la frase:\nBORRAR CLIENTAS');
+        if (promptOrder === 'BORRAR CLIENTAS') {
             const btn = document.getElementById('btn-clear-all-clients');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Limpiando...';
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Vaciando con orden...';
             }
             await window.dataManager.clearAllClients();
-            showToast('Directorio de clientes vaciado exitosamente', 'success');
+            showToast('Directorio de clientas vaciado bajo orden explícita', 'success');
             renderClientsList();
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> <span>Vaciar Directorio</span>';
+                btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> <span>Vaciar Directorio (Con Orden)</span>';
             }
+        } else if (promptOrder !== null) {
+            showToast('Operación cancelada: La frase de orden no coincide. Ningún dato fue borrado.', 'warning');
         }
     });
 
@@ -1522,6 +1598,255 @@ document.addEventListener('DOMContentLoaded', () => {
 
         openModal('modal-client-history');
     }
+
+    // =========================================================================
+    // 6.5. TIENDA & CONTROL DE PRODUCTOS (PRÓXIMAMENTE) - ADMIN CONTROLLER
+    // =========================================================================
+    const DEFAULT_SHOP_PRODUCTS = [
+        {
+            id: 'prod-1',
+            name: 'Óleo Capilar Reparador Argán & Keratina 60ml',
+            category: 'Capilar',
+            stock: 18,
+            costPrice: 22000,
+            salePrice: 38000,
+            status: 'ok',
+            img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=150&q=80'
+        },
+        {
+            id: 'prod-2',
+            name: 'Kit Kapping Gel Fortalecedor Lety Look',
+            category: 'Uñas & Kapping',
+            stock: 12,
+            costPrice: 32000,
+            salePrice: 55000,
+            status: 'ok',
+            img: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=150&q=80'
+        },
+        {
+            id: 'prod-3',
+            name: 'Exfoliante Spa Hidratante Frutos Rojos 250g',
+            category: 'Cuidado Corporal',
+            stock: 15,
+            costPrice: 18000,
+            salePrice: 32000,
+            status: 'ok',
+            img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=150&q=80'
+        },
+        {
+            id: 'prod-4',
+            name: 'Esmalte Semipermanente Gel UV Colección Lujo',
+            category: 'Uñas & Kapping',
+            stock: 24,
+            costPrice: 14000,
+            salePrice: 25000,
+            status: 'ok',
+            img: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=150&q=80'
+        },
+        {
+            id: 'prod-5',
+            name: 'Serum Reparador Cutículas con Vitamina E',
+            category: 'Uñas & Kapping',
+            stock: 24,
+            costPrice: 11000,
+            salePrice: 20000,
+            status: 'ok',
+            img: 'https://images.unsplash.com/photo-1608248597359-bb5832a514d8?auto=format&fit=crop&w=150&q=80'
+        }
+    ];
+
+    let shopProducts = JSON.parse(localStorage.getItem('lety_look_shop_products')) || DEFAULT_SHOP_PRODUCTS;
+
+    function renderShopAdminView() {
+        const tbody = document.getElementById('shop-products-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        let totalUnits = 0;
+        shopProducts.forEach(p => {
+            totalUnits += (p.stock || 0);
+            const tr = document.createElement('tr');
+            const margin = Math.round(((p.salePrice - p.costPrice) / p.salePrice) * 100);
+
+            tr.innerHTML = `
+                <td>
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <img src="${p.img}" alt="${p.name}" style="width:40px; height:40px; border-radius:var(--radius-sm); object-fit:cover; border:1px solid var(--border-color);" onerror="this.src='https://ui-avatars.com/api/?name=Prod&background=d45979&color=fff'">
+                        <div>
+                            <div style="font-weight:700; color:var(--text-main); font-size:0.92rem;">${p.name}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;">ID: ${p.id}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge" style="background:var(--bg-subtle); color:var(--text-main); font-weight:700; border:1px solid var(--border-color);">${p.category}</span>
+                </td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:0.4rem;">
+                        <button class="btn-icon btn-qty-minus" data-id="${p.id}" style="width:26px; height:26px; font-size:0.75rem;" title="Disminuir stock">-</button>
+                        <span style="font-weight:800; font-size:0.95rem; min-width:24px; text-align:center;">${p.stock}</span>
+                        <button class="btn-icon btn-qty-plus" data-id="${p.id}" style="width:26px; height:26px; font-size:0.75rem;" title="Aumentar stock">+</button>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">uds</span>
+                    </div>
+                </td>
+                <td>
+                    <div style="color:var(--text-secondary); font-size:0.85rem;">${formatCurrency(p.costPrice)}</div>
+                </td>
+                <td>
+                    <div style="font-weight:800; color:var(--primary); font-size:0.95rem;">${formatCurrency(p.salePrice)}</div>
+                    <div style="font-size:0.72rem; color:#15803d; font-weight:700;">Margen: ${margin}%</div>
+                </td>
+                <td>
+                    <span class="status-badge status-confirmed" style="font-weight:800;">
+                        <i class="fa-solid fa-check"></i> Disponible (${p.stock})
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
+                        <button class="btn-icon btn-shop-edit-price" data-id="${p.id}" title="Ajustar Precio de Venta">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                        </button>
+                        <button class="btn-icon btn-shop-edit-stock" data-id="${p.id}" title="Modificar Cantidad / Inventario">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const countEl = document.getElementById('shop-kpi-products-count');
+        if (countEl) countEl.textContent = `${shopProducts.length} Referencias`;
+
+        // Quantity Plus/Minus listeners
+        tbody.querySelectorAll('.btn-qty-plus').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const prod = shopProducts.find(p => p.id === id);
+                if (prod) {
+                    prod.stock += 1;
+                    localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                    renderShopAdminView();
+                    showToast(`Stock de "${prod.name}" aumentado a ${prod.stock} uds`, 'success');
+                }
+            });
+        });
+
+        tbody.querySelectorAll('.btn-qty-minus').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const prod = shopProducts.find(p => p.id === id);
+                if (prod && prod.stock > 0) {
+                    prod.stock -= 1;
+                    localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                    renderShopAdminView();
+                    showToast(`Stock de "${prod.name}" ajustado a ${prod.stock} uds`, 'info');
+                }
+            });
+        });
+
+        // Edit price listener
+        tbody.querySelectorAll('.btn-shop-edit-price').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const prod = shopProducts.find(p => p.id === id);
+                if (prod) {
+                    const newPrice = prompt(`Ajustar precio de venta para:\n"${prod.name}"\n\nPrecio actual: $${prod.salePrice.toLocaleString('es-CO')}\nIngresa el nuevo precio (solo números):`, prod.salePrice);
+                    if (newPrice && !isNaN(newPrice) && Number(newPrice) > 0) {
+                        prod.salePrice = Number(newPrice);
+                        localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                        renderShopAdminView();
+                        showToast(`Precio de venta de "${prod.name}" actualizado a ${formatCurrency(prod.salePrice)}`, 'success');
+                    }
+                }
+            });
+        });
+
+        // Edit stock direct listener
+        tbody.querySelectorAll('.btn-shop-edit-stock').forEach(b => {
+            b.addEventListener('click', () => {
+                const id = b.getAttribute('data-id');
+                const prod = shopProducts.find(p => p.id === id);
+                if (prod) {
+                    const newStock = prompt(`Ajustar cantidad en inventario para:\n"${prod.name}"\n\nCantidad actual: ${prod.stock} unidades\nIngresa la nueva cantidad:`, prod.stock);
+                    if (newStock !== null && !isNaN(newStock) && Number(newStock) >= 0) {
+                        prod.stock = Number(newStock);
+                        localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                        renderShopAdminView();
+                        showToast(`Inventario de "${prod.name}" fijado en ${prod.stock} uds`, 'success');
+                    }
+                }
+            });
+        });
+    }
+
+    // Shop Admin Sub-tab switcher
+    function setupShopSubTabs() {
+        const btnProducts = document.getElementById('btn-shop-tab-products');
+        const btnOrders = document.getElementById('btn-shop-tab-orders');
+        const btnPricing = document.getElementById('btn-shop-tab-pricing');
+
+        const panelProducts = document.getElementById('shop-panel-products');
+        const panelOrders = document.getElementById('shop-panel-orders');
+        const panelPricing = document.getElementById('shop-panel-pricing');
+
+        function activateTab(btn, panel) {
+            [btnProducts, btnOrders, btnPricing].forEach(b => {
+                if (b) {
+                    b.classList.remove('active');
+                    b.style.background = 'transparent';
+                    b.style.color = 'var(--text-muted)';
+                    b.style.boxShadow = 'none';
+                }
+            });
+            [panelProducts, panelOrders, panelPricing].forEach(p => {
+                if (p) p.style.display = 'none';
+            });
+
+            if (btn) {
+                btn.classList.add('active');
+                btn.style.background = 'var(--bg-surface)';
+                btn.style.color = 'var(--text-main)';
+                btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.06)';
+            }
+            if (panel) panel.style.display = 'block';
+        }
+
+        btnProducts?.addEventListener('click', () => activateTab(btnProducts, panelProducts));
+        btnOrders?.addEventListener('click', () => activateTab(btnOrders, panelOrders));
+        btnPricing?.addEventListener('click', () => activateTab(btnPricing, panelPricing));
+
+        document.getElementById('btn-shop-preview-add')?.addEventListener('click', () => {
+            const name = prompt('Nombre del nuevo producto para agregar a la tienda demo:', 'Kit Spa Cuidado Capilar');
+            if (name) {
+                const newProd = {
+                    id: 'prod-' + Date.now(),
+                    name: name.trim(),
+                    category: 'Belleza',
+                    stock: 10,
+                    costPrice: 20000,
+                    salePrice: 35000,
+                    status: 'ok',
+                    img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=150&q=80'
+                };
+                shopProducts.push(newProd);
+                localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+                renderShopAdminView();
+                showToast(`Producto "${newProd.name}" agregado con éxito al catálogo demo`, 'success');
+            }
+        });
+
+        document.getElementById('btn-apply-mass-price')?.addEventListener('click', () => {
+            const percent = Number(document.getElementById('input-mass-price-adj')?.value) || 5;
+            shopProducts.forEach(p => {
+                p.salePrice = Math.round(p.salePrice * (1 + (percent / 100)));
+            });
+            localStorage.setItem('lety_look_shop_products', JSON.stringify(shopProducts));
+            renderShopAdminView();
+            showToast(`Ajuste del +${percent}% aplicado a todos los precios de venta`, 'success');
+        });
+    }
+    setupShopSubTabs();
 
     // =========================================================================
     // 7. SETTINGS & DATA CONTROLLER (GITHUB PAGES)
@@ -1641,9 +1966,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-reset-demo-data')?.addEventListener('click', () => {
-        if (confirm('¿Deseas restaurar los datos de ejemplo iniciales de LETY LOOK?')) {
+        if (confirm('¿Deseas restaurar los servicios y configuración de ejemplo iniciales de LETY LOOK?\n\nNOTA DE SEGURIDAD: Los datos personales de tus clientas registradas y sus citas están 100% protegidos y NO se borrarán.')) {
             window.dataManager.resetToDefaults();
-            showToast('Datos restablecidos a los valores por defecto', 'info');
+            showToast('Servicios restablecidos a los valores por defecto (Clientas conservadas)', 'info');
             renderDashboard();
         }
     });

@@ -80,6 +80,25 @@
                 </button>
             </div>
 
+            <!-- Tienda Virtual Promo Teaser Card -->
+            <div id="btn-banner-go-to-shop" style="margin: 0.75rem 1.25rem 0.5rem; background: linear-gradient(135deg, #1e1b18, #3b2832); color:#fff; border-radius:var(--radius-md); padding:0.95rem 1.15rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.12); border:1px solid rgba(245,158,11,0.3); transition:var(--transition);">
+                <div style="display:flex; align-items:center; gap:0.85rem;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0; box-shadow:0 4px 12px rgba(245,158,11,0.35);">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    <div>
+                        <div style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(245,158,11,0.25); color:#fde68a; font-size:0.62rem; font-weight:800; padding:0.12rem 0.45rem; border-radius:10px; text-transform:uppercase; margin-bottom:0.15rem;">
+                            <i class="fa-solid fa-sparkles"></i> Próximamente
+                        </div>
+                        <h4 style="font-size:0.92rem; font-weight:700; margin:0; color:#fff;">Tienda de Productos Lety Look</h4>
+                        <p style="font-size:0.75rem; color:rgba(255,255,255,0.8); margin:0;">Pide aceites capilares, kits de uñas y tratamientos para tu hogar.</p>
+                    </div>
+                </div>
+                <div style="color:#f59e0b; font-size:1.1rem; margin-left:0.5rem;">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+
             <!-- Categories Horizontal Selector -->
             <div class="section-title-wrap">
                 <h3>Servicios de Belleza</h3>
@@ -297,6 +316,56 @@
         </section>
 
         <!-- ======================================================================
+             TAB: BOUTIQUE & TIENDA DE PRODUCTOS (PRÓXIMAMENTE)
+             ====================================================================== -->
+        <section id="tab-shop" class="tab-content" style="display: none; padding: 1.25rem 1.25rem 6rem;">
+            <!-- Hero Banner for Shop -->
+            <div style="background:linear-gradient(135deg, #1e1b18, #3b2832); color:#fff; border-radius:var(--radius-lg); padding:1.6rem 1.3rem; margin-bottom:1.25rem; position:relative; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.18);">
+                <div style="position:absolute; right:-15px; bottom:-15px; font-size:6.5rem; color:rgba(255,255,255,0.04); pointer-events:none;">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                </div>
+                <div style="display:inline-flex; align-items:center; gap:0.4rem; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; font-size:0.68rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.6rem;">
+                    <i class="fa-solid fa-clock"></i> ¡Próximamente en Línea!
+                </div>
+                <h2 style="font-family:'Playfair Display', serif; font-size:1.45rem; font-weight:700; margin-bottom:0.4rem; color:#fff;">
+                    Boutique & Cuidado en Casa
+                </h2>
+                <p style="font-size:0.82rem; color:rgba(255,255,255,0.85); line-height:1.4; margin-bottom:1rem;">
+                    Lleva los productos profesionales de LETY LOOK a tu rutina diaria. Selecciona cantidades, arma tu consulta de pedido o pregúntanos directamente por WhatsApp.
+                </p>
+                <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:#fde68a;">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <span>¿Deseas encargar hoy? ¡Pregúntanos por WhatsApp!</span>
+                </div>
+            </div>
+
+            <!-- Categories Horizontal Selector for Shop -->
+            <div class="category-horizontal-list" id="client-shop-category-slider" style="margin-bottom:1.1rem;">
+                <button class="cat-btn-pill active" data-shop-cat="all"><i class="fa-solid fa-sparkles"></i> Todos</button>
+                <button class="cat-btn-pill" data-shop-cat="Capilar"><i class="fa-solid fa-pump-soap"></i> Capilar</button>
+                <button class="cat-btn-pill" data-shop-cat="Uñas & Kapping"><i class="fa-solid fa-hand-sparkles"></i> Uñas & Kapping</button>
+                <button class="cat-btn-pill" data-shop-cat="Cuidado Corporal"><i class="fa-solid fa-spa"></i> Corporal & Spa</button>
+            </div>
+
+            <!-- Products Showcase Grid -->
+            <div id="client-shop-products-grid" style="display:flex; flex-direction:column; gap:0.85rem;">
+                <!-- Populated dynamically by client-app.js -->
+            </div>
+
+            <!-- Pre-Order WhatsApp Floating Helper Bar -->
+            <div id="client-order-summary-bar" style="display:none; position:fixed; bottom:74px; left:50%; transform:translateX(-50%); width:calc(100% - 2rem); max-width:400px; background:var(--bg-surface, #fff); border:1.5px solid var(--primary); box-shadow:0 12px 35px rgba(212,89,121,0.28); border-radius:var(--radius-lg); padding:0.85rem 1.1rem; z-index:998; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">Consulta de Pedido:</div>
+                    <div id="client-order-total-preview" style="font-weight:800; font-size:1.05rem; color:var(--text-main);">$0</div>
+                </div>
+                <button id="btn-client-send-shop-order" type="button" class="btn-hero-book" style="padding:0.6rem 1rem; font-size:0.82rem; border-radius:var(--radius-md);">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <span>Consultar Pedido</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================================================================
              TAB 3: SPECIALISTS DIRECTORY
              ====================================================================== -->
         <section id="tab-staff" class="tab-content" style="display: none; padding: 1.25rem;">
@@ -472,6 +541,9 @@
                             <strong id="profile-total-appointments">0</strong>
                         </div>
                     </div>
+                    <button id="btn-open-edit-client-profile" type="button" class="btn-book-service" style="width:100%; justify-content:center; padding:0.75rem; margin-top:1rem; background:var(--primary); color:#fff; border:none; box-shadow:var(--shadow-sm);">
+                        <i class="fa-solid fa-user-pen"></i> Editar Mis Datos Personales
+                    </button>
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
@@ -484,6 +556,50 @@
                 </div>
             </div>
         </section>
+
+        <!-- Modal: Editar Datos Personales del Cliente -->
+        <div id="modal-client-edit-profile" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
+            <div style="background:var(--bg-surface, #fff); border-radius:var(--radius-lg); padding:1.75rem 1.4rem; max-width:420px; width:100%; box-shadow:0 15px 40px rgba(0,0,0,0.4); border:1px solid var(--border-color); text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <i class="fa-solid fa-user-pen" style="color:var(--primary); font-size:1.2rem;"></i>
+                        <h3 style="font-family:'Playfair Display', serif; font-size:1.25rem; color:var(--text-main); margin:0;">Editar Mi Perfil</h3>
+                    </div>
+                    <button id="btn-close-edit-profile-modal" type="button" style="background:none; border:none; font-size:1.3rem; color:var(--text-secondary); cursor:pointer;">&times;</button>
+                </div>
+                <form id="form-client-edit-profile">
+                    <div class="client-form-group">
+                        <label for="edit-profile-name">Nombre Completo *</label>
+                        <input type="text" id="edit-profile-name" class="client-form-input" required placeholder="Tu nombre">
+                    </div>
+                    <div class="client-form-group">
+                        <label for="edit-profile-phone">WhatsApp / Celular *</label>
+                        <input type="tel" id="edit-profile-phone" class="client-form-input" required placeholder="Ej: 3138869676">
+                    </div>
+                    <div class="client-form-group">
+                        <label for="edit-profile-email">Correo Electrónico *</label>
+                        <input type="email" id="edit-profile-email" class="client-form-input" required placeholder="correo@ejemplo.com">
+                    </div>
+                    <div class="client-form-group">
+                        <label for="edit-profile-password">Nueva Contraseña (Opcional)</label>
+                        <input type="password" id="edit-profile-password" class="client-form-input" placeholder="Dejar en blanco para conservar la actual">
+                    </div>
+                    <div style="background:var(--bg-subtle, #f9fafb); padding:0.65rem 0.8rem; border-radius:var(--radius-sm); font-size:0.75rem; color:var(--text-secondary); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+                        <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i>
+                        <span>Tus datos se guardan de forma permanente y segura.</span>
+                    </div>
+                    <div style="display:flex; gap:0.75rem;">
+                        <button type="button" id="btn-cancel-edit-profile" class="btn-book-service" style="flex:1; justify-content:center; padding:0.75rem; background:none; border:1px solid var(--border-color); color:var(--text-secondary);">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn-hero-book" style="flex:2; justify-content:center; padding:0.75rem;">
+                            <span>Guardar Cambios</span>
+                            <i class="fa-solid fa-floppy-disk"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- Dynamic Smart App Installation Instructions Modal (iOS & Android) -->
         <div id="modal-install-instructions" class="client-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
@@ -518,6 +634,13 @@
                 <i class="fa-solid fa-calendar-plus"></i>
                 <span>Reservar</span>
             </button>
+            <button class="nav-tab-btn" data-target="tab-shop">
+                <div style="position:relative; display:inline-block;">
+                    <i class="fa-solid fa-store"></i>
+                    <span class="badge-nav-soon">Pronto</span>
+                </div>
+                <span>Tienda</span>
+            </button>
             <button class="nav-tab-btn" data-target="tab-staff">
                 <i class="fa-solid fa-user-tie"></i>
                 <span>Equipo</span>
@@ -534,7 +657,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=17.0"></script>
-    <script src="js/client-app.js?v=17.0"></script>
+    <script src="js/data.js?v=19.0"></script>
+    <script src="js/client-app.js?v=19.0"></script>
 </body>
 </html>
