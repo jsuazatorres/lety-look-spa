@@ -2,6 +2,15 @@
  * LETY LOOK SPA - Application Logic & Controllers
  */
 
+window.cleanNumber = function(val) {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    if (!val) return 0;
+    const cleaned = String(val).replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+};
+var cleanNumber = window.cleanNumber;
+
 document.addEventListener('DOMContentLoaded', () => {
     // Current application state
     const state = {
@@ -81,8 +90,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function openModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
+            // Guard: ensure modal is a direct child of <body> so it can never be trapped by ancestor display:none or stacking contexts
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
             modal.classList.add('active');
             modal.style.display = 'flex';
+            modal.style.opacity = '1';
+            modal.style.visibility = 'visible';
+            modal.style.pointerEvents = 'auto';
             document.body.style.overflow = 'hidden';
         }
     }
