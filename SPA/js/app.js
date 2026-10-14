@@ -2080,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return isNaN(parsed) ? 0 : parsed;
         }
 
-        // Global save handler for Shop Product modal
+        // Global save handler for Shop Product modal (Non-blocking, instant feedback)
         function saveShopProductFromModal(e) {
             if (e && typeof e.preventDefault === 'function') e.preventDefault();
 
@@ -2095,14 +2095,23 @@ document.addEventListener('DOMContentLoaded', () => {
             let img = document.getElementById('shop-prod-img')?.value.trim() || '';
 
             if (!name) {
-                alert('Por favor ingresa el nombre del producto.');
+                showToast('Por favor ingresa el nombre del producto', 'error');
                 nameInput?.focus();
+                if (nameInput) {
+                    nameInput.style.borderColor = '#ef4444';
+                    setTimeout(() => { nameInput.style.borderColor = ''; }, 2500);
+                }
                 return false;
             }
 
             if (salePrice <= 0) {
-                alert('Por favor ingresa un precio de venta al público válido (mayor a $0).');
-                document.getElementById('shop-prod-price')?.focus();
+                showToast('Por favor ingresa un precio de venta mayor a $0', 'error');
+                const priceInput = document.getElementById('shop-prod-price');
+                priceInput?.focus();
+                if (priceInput) {
+                    priceInput.style.borderColor = '#ef4444';
+                    setTimeout(() => { priceInput.style.borderColor = ''; }, 2500);
+                }
                 return false;
             }
 
@@ -2132,19 +2141,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 productData.id = id;
             }
 
-            if (window.dataManager && typeof window.dataManager.saveShopProduct === 'function') {
-                window.dataManager.saveShopProduct(productData);
-            } else {
+            try {
+                if (window.dataManager && typeof window.dataManager.saveShopProduct === 'function') {
+                    window.dataManager.saveShopProduct(productData);
+                }
                 const products = getAdminShopProducts();
                 if (id) {
                     const idx = products.findIndex(p => p.id === id);
                     if (idx !== -1) products[idx] = { ...products[idx], ...productData };
                     else products.push(productData);
                 } else {
-                    productData.id = 'prod-' + Date.now();
+                    if (!productData.id) productData.id = 'prod-' + Date.now();
                     products.push(productData);
                 }
                 localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
+            } catch(saveErr) {
+                console.error('Error saving shop product:', saveErr);
             }
 
             closeModal('modal-shop-product');
@@ -2155,6 +2167,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.saveShopProductFromModal = saveShopProductFromModal;
         document.getElementById('form-shop-product')?.addEventListener('submit', saveShopProductFromModal);
+        document.getElementById('btn-save-shop-product')?.addEventListener('click', saveShopProductFromModal);
 
         // Fallback for preview add button if clicked
         document.getElementById('btn-shop-preview-add')?.addEventListener('click', () => {

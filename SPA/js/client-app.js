@@ -4,6 +4,20 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Synchronize Theme with Settings / Admin Theme
+    function syncClientTheme() {
+        const theme = localStorage.getItem('lety_look_theme') || 'default';
+        if (theme && theme !== 'default') {
+            document.documentElement.setAttribute('data-theme', theme);
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+    }
+    syncClientTheme();
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'lety_look_theme') syncClientTheme();
+    });
+
     // Client App State
     const clientState = {
         currentTab: 'tab-explore',
@@ -1615,6 +1629,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.style.display = 'none';
         document.body.style.overflow = '';
     }
+
+    window.openCartModal = openCartModal;
+    window.closeCartModal = closeCartModal;
 
     function renderCartModalContent() {
         const container = document.getElementById('cart-items-container');
