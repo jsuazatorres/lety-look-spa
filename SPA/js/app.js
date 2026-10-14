@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.classList.add('active');
+            modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
     }
@@ -90,9 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.classList.remove('active');
+            modal.style.display = 'none';
             document.body.style.overflow = '';
         }
     }
+    window.openModal = openModal;
+    window.closeModal = closeModal;
 
     // Setup Modal Close Handlers
     document.querySelectorAll('[data-close-modal]').forEach(btn => {
@@ -1716,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td style="text-align: right;">
                     <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
-                        <button class="btn-icon btn-shop-edit-full" data-id="${p.id}" title="Editar Producto (Nombre, Categoría, Stock, Precios, Foto)">
+                        <button class="btn-icon btn-shop-edit-full" data-id="${p.id}" onclick="window.openShopProductModal ? window.openShopProductModal('${p.id}') : null" title="Editar Producto (Nombre, Categoría, Stock, Precios, Foto)">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
                         <button class="btn-icon btn-shop-edit-price" data-id="${p.id}" title="Ajustar Precio Rápido">
@@ -1725,7 +1729,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-icon btn-shop-edit-stock" data-id="${p.id}" title="Modificar Stock Rápido">
                             <i class="fa-solid fa-boxes-stacked"></i>
                         </button>
-                        <button class="btn-icon btn-shop-delete-prod" data-id="${p.id}" title="Eliminar Producto del Catálogo" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">
+                        <button class="btn-icon btn-shop-delete-prod" data-id="${p.id}" onclick="window.deleteAdminShopProduct ? window.deleteAdminShopProduct('${p.id}') : null" title="Eliminar Producto del Catálogo" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
@@ -1892,6 +1896,25 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal('modal-shop-product');
     }
 
+    // Expose helpers globally so HTML onclick handlers always work
+    window.openShopProductModal = openShopProductModal;
+    window.deleteAdminShopProduct = function(productId) {
+        const products = getAdminShopProducts();
+        const prod = products.find(p => p.id === productId);
+        if (prod) {
+            if (confirm(`¿Estás segura de que deseas eliminar el producto "${prod.name}" del catálogo de la tienda? Esta acción no se puede deshacer.`)) {
+                if (window.dataManager && typeof window.dataManager.deleteShopProduct === 'function') {
+                    window.dataManager.deleteShopProduct(productId);
+                } else {
+                    const updated = products.filter(p => p.id !== productId);
+                    localStorage.setItem('lety_look_shop_products', JSON.stringify(updated));
+                }
+                renderShopAdminView();
+                showToast(`Producto "${prod.name}" eliminado del catálogo`, 'info');
+            }
+        }
+    };
+
     function updateShopModalMargin() {
         const cost = Number(document.getElementById('shop-prod-cost')?.value) || 0;
         const price = Number(document.getElementById('shop-prod-price')?.value) || 0;
@@ -2049,26 +2072,38 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('shop-prod-cost')?.addEventListener('input', updateShopModalMargin);
         document.getElementById('shop-prod-price')?.addEventListener('input', updateShopModalMargin);
 
-        // Submit Add/Edit Product Form
-        document.getElementById('form-shop-product')?.addEventListener('submit', (e) => {
-            e.preventDefault();
+        function cleanNumber(val) {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            if (!val) return 0;
+            const cleaned = String(val).replace(/[^0-9.-]/g, '');
+            const parsed = parseFloat(cleaned);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        // Global save handler for Shop Product modal
+        function saveShopProductFromModal(e) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
             const id = document.getElementById('shop-prod-form-id')?.value.trim() || null;
-            const name = document.getElementById('shop-prod-name')?.value.trim();
+            const nameInput = document.getElementById('shop-prod-name');
+            const name = nameInput ? nameInput.value.trim() : '';
             const category = document.getElementById('shop-prod-category')?.value || 'Capilar';
-            const stock = Math.max(0, parseInt(document.getElementById('shop-prod-stock')?.value, 10) || 0);
-            const costPrice = Math.max(0, parseFloat(document.getElementById('shop-prod-cost')?.value) || 0);
-            const salePrice = Math.max(0, parseFloat(document.getElementById('shop-prod-price')?.value) || 0);
+            const stock = Math.max(0, parseInt(cleanNumber(document.getElementById('shop-prod-stock')?.value), 10) || 0);
+            const costPrice = Math.max(0, cleanNumber(document.getElementById('shop-prod-cost')?.value));
+            const salePrice = Math.max(0, cleanNumber(document.getElementById('shop-prod-price')?.value));
             const desc = document.getElementById('shop-prod-desc')?.value.trim() || '';
             let img = document.getElementById('shop-prod-img')?.value.trim() || '';
 
             if (!name) {
                 alert('Por favor ingresa el nombre del producto.');
-                return;
+                nameInput?.focus();
+                return false;
             }
 
             if (salePrice <= 0) {
-                alert('El precio de venta debe ser superior a $0.');
-                return;
+                alert('Por favor ingresa un precio de venta al público válido (mayor a $0).');
+                document.getElementById('shop-prod-price')?.focus();
+                return false;
             }
 
             // High quality category fallback images if no photo URL provided
@@ -2115,7 +2150,11 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal('modal-shop-product');
             renderShopAdminView();
             showToast(`Producto "${name}" ${id ? 'actualizado' : 'agregado'} exitosamente al catálogo`, 'success');
-        });
+            return true;
+        }
+
+        window.saveShopProductFromModal = saveShopProductFromModal;
+        document.getElementById('form-shop-product')?.addEventListener('submit', saveShopProductFromModal);
 
         // Fallback for preview add button if clicked
         document.getElementById('btn-shop-preview-add')?.addEventListener('click', () => {

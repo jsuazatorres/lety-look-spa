@@ -1465,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span style="font-size:0.68rem; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">${prod.category}</span>
                             ${isOutOfStock 
                                 ? `<span style="font-size:0.68rem; font-weight:800; color:#ef4444; background:#fee2e2; padding:0.1rem 0.45rem; border-radius:10px;"><i class="fa-solid fa-circle-xmark"></i> Agotado</span>`
-                                : `<span style="font-size:0.68rem; font-weight:700; color:#15803d; background:#dcfce7; padding:0.1rem 0.45rem; border-radius:10px;"><i class="fa-solid fa-boxes-stacked"></i> ${stock} disponibles</span>`
+                                : `<span style="font-size:0.68rem; font-weight:700; color:#15803d; background:#dcfce7; padding:0.1rem 0.45rem; border-radius:10px;"><i class="fa-solid fa-circle-check"></i> Disponible</span>`
                             }
                         </div>
                         <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin:0.2rem 0 0.25rem; line-height:1.25;">${prod.name}</h4>
@@ -1507,7 +1507,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     val += 1;
                     input.value = val;
                 } else {
-                    alert(`Solo hay ${max} unidades disponibles de este producto.`);
+                    alert('Has alcanzado la cantidad máxima disponible para este producto.');
                 }
             });
         });
@@ -1547,13 +1547,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (existing) {
                     const newTotal = (existing.qty || 0) + addQty;
                     if (newTotal > stock) {
-                        alert(`No puedes agregar más de ${stock} unidades (ya tienes ${existing.qty} en tu canasta).`);
+                        alert('Has alcanzado el límite disponible de este producto en tu canasta.');
                         return;
                     }
                     existing.qty = newTotal;
                 } else {
                     if (addQty > stock) {
-                        alert(`Solo hay ${stock} unidades disponibles.`);
+                        alert('Has alcanzado el límite disponible de este producto en tu canasta.');
                         return;
                     }
                     cart.push({
@@ -1706,7 +1706,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderCartModalContent();
                         renderShopClientTab();
                     } else {
-                        alert(`Solo hay ${max} unidades disponibles de este producto.`);
+                        alert('Has alcanzado la cantidad máxima disponible para este producto.');
                     }
                 }
             });

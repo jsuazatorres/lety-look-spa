@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js?v=16.0"></script>
     <!-- Custom Stylesheet -->
-    <link rel="stylesheet" href="css/styles.css?v=22.0">
+    <link rel="stylesheet" href="css/styles.css?v=23.0">
 </head>
 <body>
     <!-- Admin Security Gate / Lock Screen -->
@@ -1085,7 +1085,7 @@
                 </div>
                 <button class="modal-close-btn" data-close-modal="modal-shop-product"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form id="form-shop-product">
+            <form id="form-shop-product" novalidate onsubmit="if (window.saveShopProductFromModal) { window.saveShopProductFromModal(event); } return false;">
                 <input type="hidden" id="shop-prod-form-id">
                 <div class="modal-body">
                     <div class="form-grid">
@@ -1105,15 +1105,15 @@
                         </div>
                         <div class="form-group">
                             <label for="shop-prod-stock">Cantidad en Inventario (Stock) *</label>
-                            <input type="number" id="shop-prod-stock" class="form-control" min="0" value="10" required>
+                            <input type="number" id="shop-prod-stock" class="form-control" min="0" step="1" value="10" required>
                         </div>
                         <div class="form-group">
                             <label for="shop-prod-cost">Precio de Costo (COP) *</label>
-                            <input type="number" id="shop-prod-cost" class="form-control" min="0" step="500" placeholder="Ej. 15000" required>
+                            <input type="number" id="shop-prod-cost" class="form-control" min="0" step="any" placeholder="Ej. 15000" required>
                         </div>
                         <div class="form-group">
                             <label for="shop-prod-price">Precio de Venta al Público (COP) *</label>
-                            <input type="number" id="shop-prod-price" class="form-control" min="0" step="500" placeholder="Ej. 28000" required>
+                            <input type="number" id="shop-prod-price" class="form-control" min="0" step="any" placeholder="Ej. 28000" required>
                         </div>
                         <div class="form-group full-width">
                             <label for="shop-prod-desc">Descripción del Producto (Para las clientas)</label>
@@ -1121,7 +1121,7 @@
                         </div>
                         <div class="form-group full-width">
                             <label for="shop-prod-img">URL de Imagen del Producto</label>
-                            <input type="url" id="shop-prod-img" class="form-control" placeholder="https://ejemplo.com/foto-producto.jpg">
+                            <input type="text" id="shop-prod-img" class="form-control" placeholder="https://ejemplo.com/foto-producto.jpg">
                             <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem; display:block;">
                                 Opcional: deja en blanco para asignar una imagen profesional sugerida automáticamente.
                             </span>
@@ -1136,7 +1136,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" data-close-modal="modal-shop-product">Cancelar</button>
-                    <button type="submit" class="btn-primary" id="btn-save-shop-product" style="background:linear-gradient(135deg, #f59e0b, #d97706); border-color:#d97706;">
+                    <button type="button" class="btn-primary" id="btn-save-shop-product" onclick="if (window.saveShopProductFromModal) { window.saveShopProductFromModal(event); }" style="background:linear-gradient(135deg, #f59e0b, #d97706); border-color:#d97706;">
                         <i class="fa-solid fa-floppy-disk"></i>
                         <span>Guardar Producto</span>
                     </button>
@@ -1149,7 +1149,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=22.0"></script>
-    <script src="js/app.js?v=22.0"></script>
+    <script src="js/data.js?v=23.0"></script>
+    <script src="js/app.js?v=23.0"></script>
 </body>
 </html>
