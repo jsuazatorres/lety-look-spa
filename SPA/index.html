@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js?v=16.0"></script>
     <!-- Custom Stylesheet -->
-    <link rel="stylesheet" href="css/styles.css?v=6.0">
+    <link rel="stylesheet" href="css/styles.css?v=22.0">
 </head>
 <body>
     <!-- Admin Security Gate / Lock Screen -->
@@ -463,7 +463,7 @@
                                 </p>
                             </div>
                             <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                                <button type="button" class="btn btn-primary" id="btn-shop-open-create-modal" style="background:linear-gradient(135deg, #f59e0b, #d97706); border:none; box-shadow:0 4px 15px rgba(245,158,11,0.3);">
+                                <button type="button" class="btn btn-primary" id="btn-shop-open-create-modal" onclick="window.openShopProductModal ? window.openShopProductModal(null) : null" style="background:linear-gradient(135deg, #f59e0b, #d97706); border:none; box-shadow:0 4px 15px rgba(245,158,11,0.3);">
                                     <i class="fa-solid fa-plus-circle"></i> Agregar Producto
                                 </button>
                                 <a href="cliente.html" target="_blank" class="btn btn-outline" style="border-color:var(--primary); color:var(--primary);">
@@ -1149,7 +1149,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=21.0"></script>
-    <script src="js/app.js?v=21.0"></script>
+    <script src="js/data.js?v=22.0"></script>
+    <script src="js/app.js?v=22.0"></script>
 </body>
 </html>

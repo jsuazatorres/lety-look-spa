@@ -24,7 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js?v=17.0"></script>
     <!-- Client App Stylesheet -->
-    <link rel="stylesheet" href="css/client-app.css?v=8.0">
+    <link rel="stylesheet" href="css/client-app.css?v=22.0">
 </head>
 <body>
     <div class="mobile-app-container">
@@ -54,32 +54,32 @@
                 </div>
             </header>
 
-            <!-- Top App Navigation Menu (Barra de Menú Arriba) -->
-            <nav class="app-top-nav">
-                <button class="nav-tab-btn active" data-target="tab-explore">
+            <!-- Top App Navigation Menu (Barra de Menú Arriba - Horizontal) -->
+            <nav class="app-top-nav" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; justify-content: space-around !important; align-items: center !important; width: 100% !important; box-sizing: border-box !important; padding: 0.35rem 0.25rem 0.55rem !important; gap: 0.15rem !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important;">
+                <button class="nav-tab-btn active" data-target="tab-explore" style="flex: 1 1 0 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 0.45rem 0.1rem !important; white-space: nowrap !important;">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                     <span>Explorar</span>
                 </button>
-                <button class="nav-tab-btn" data-target="tab-book">
+                <button class="nav-tab-btn" data-target="tab-book" style="flex: 1 1 0 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 0.45rem 0.1rem !important; white-space: nowrap !important;">
                     <i class="fa-solid fa-calendar-plus"></i>
                     <span>Reservar</span>
                 </button>
-                <button class="nav-tab-btn" data-target="tab-shop">
+                <button class="nav-tab-btn" data-target="tab-shop" style="flex: 1 1 0 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 0.45rem 0.1rem !important; white-space: nowrap !important;">
                     <div style="position:relative; display:inline-block;">
                         <i class="fa-solid fa-store"></i>
                         <span id="nav-shop-cart-pill" class="badge-nav-soon">Tienda</span>
                     </div>
                     <span>Tienda</span>
                 </button>
-                <button class="nav-tab-btn" data-target="tab-staff">
+                <button class="nav-tab-btn" data-target="tab-staff" style="flex: 1 1 0 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 0.45rem 0.1rem !important; white-space: nowrap !important;">
                     <i class="fa-solid fa-user-tie"></i>
                     <span>Equipo</span>
                 </button>
-                <button class="nav-tab-btn" data-target="tab-my-appointments">
+                <button class="nav-tab-btn" data-target="tab-my-appointments" style="flex: 1 1 0 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 0.45rem 0.1rem !important; white-space: nowrap !important;">
                     <i class="fa-solid fa-clock-rotate-left"></i>
                     <span>Mis Citas</span>
                 </button>
-                <button class="nav-tab-btn" data-target="tab-account">
+                <button class="nav-tab-btn" data-target="tab-account" style="flex: 1 1 0 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 0.45rem 0.1rem !important; white-space: nowrap !important;">
                     <i class="fa-solid fa-user"></i>
                     <span id="nav-account-label">Cuenta</span>
                 </button>
@@ -834,8 +834,8 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=21.0"></script>
-    <script src="js/client-app.js?v=21.0"></script>
+    <script src="js/data.js?v=22.0"></script>
+    <script src="js/client-app.js?v=22.0"></script>
 </body>
 </html>
 
