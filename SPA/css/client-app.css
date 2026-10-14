@@ -14,6 +14,7 @@
     --secondary-light: #fefce8;
     --accent: #10b981;
     --bg-main: #fcf9f9;
+    --bg-surface: #ffffff;
     --bg-card: #ffffff;
     --bg-subtle: #faf5f5;
     --text-main: #1f2937;
@@ -38,6 +39,7 @@
     --secondary-light: #3b1d54;
     --accent: #22c55e;
     --bg-main: #0d0914;
+    --bg-surface: #1c152b;
     --bg-card: #1c152b;
     --bg-subtle: #241b37;
     --text-main: #fdf4ff;
@@ -1145,5 +1147,64 @@ body {
 [data-theme="halloween"] .payment-option-card.active {
     background: rgba(255, 117, 24, 0.15) !important;
     border-color: var(--primary) !important;
+}
+
+/* Fixed Global Modal Styling for Client App */
+.client-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    background: rgba(0, 0, 0, 0.72) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    z-index: 9999999 !important;
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1.25rem !important;
+    box-sizing: border-box !important;
+}
+
+#modal-client-cart {
+    align-items: flex-end !important;
+    padding: 0 !important;
+}
+
+#modal-client-cart > div {
+    width: 100% !important;
+    max-width: 460px !important;
+    border-top-left-radius: 24px !important;
+    border-top-right-radius: 24px !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6) !important;
+    margin: 0 auto !important;
+    max-height: 85vh !important;
+    max-height: 85dvh !important;
+    overflow-y: auto !important;
+    background: var(--bg-surface, #ffffff) !important;
+    color: var(--text-main, #1f2937) !important;
+}
+
+[data-theme="halloween"] .client-modal > div {
+    background: #1c152b !important;
+    color: #fdf4ff !important;
+    border-color: #38294f !important;
+}
+
+[data-theme="halloween"] #modal-client-cart h3,
+[data-theme="halloween"] #modal-client-cart label,
+[data-theme="halloween"] #modal-client-cart strong {
+    color: #fdf4ff !important;
+}
+
+[data-theme="halloween"] .delivery-option-card span,
+[data-theme="halloween"] .payment-option-card span {
+    color: #fdf4ff !important;
 }
 
