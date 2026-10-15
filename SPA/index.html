@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js?v=27.0"></script>
     <!-- Custom Stylesheet -->
-    <link rel="stylesheet" href="css/styles.css?v=29.0">
+    <link rel="stylesheet" href="css/styles.css?v=30.0">
 </head>
 <body>
     <!-- Admin Security Gate / Lock Screen -->
@@ -233,9 +233,21 @@
                                 <i class="fa-solid fa-coins"></i>
                             </div>
                             <div class="kpi-details">
-                                <span>Ingresos Estimados Hoy</span>
+                                <span>Ingresos Citas Spa (Hoy)</span>
                                 <h3 id="kpi-today-revenue">$0</h3>
                                 <p class="kpi-subtext">Basado en citas del día</p>
+                            </div>
+                        </div>
+
+                        <!-- 🛒 DEDICATED TIENDA REVENUE KPI -->
+                        <div class="kpi-card kpi-orange" id="dash-kpi-shop-card" style="cursor:pointer;" title="Click para ir a Tienda y Pedidos">
+                            <div class="kpi-icon-wrap">
+                                <i class="fa-solid fa-store"></i>
+                            </div>
+                            <div class="kpi-details">
+                                <span>Ingresos Tienda Online</span>
+                                <h3 id="kpi-shop-revenue">$0</h3>
+                                <p class="kpi-subtext" id="kpi-shop-subtext">0 pedidos efectuados</p>
                             </div>
                         </div>
 
@@ -288,6 +300,23 @@
                             <div id="dash-category-bars" class="category-bars">
                                 <!-- Dynamic category bars -->
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Shop Orders Card -->
+                    <div class="dash-card" style="margin-top: 1.5rem;">
+                        <div class="dash-card-header">
+                            <div>
+                                <h3 style="display:flex; align-items:center; gap:0.5rem;">
+                                    <i class="fa-solid fa-basket-shopping" style="color:var(--primary);"></i>
+                                    <span>Pedidos Recientes de la Tienda</span>
+                                </h3>
+                                <p style="font-size: 0.82rem; color: var(--text-muted);">Compras de productos realizadas por clientas desde la App</p>
+                            </div>
+                            <button id="dash-view-all-shop-orders-btn" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">Ver Control de Tienda</button>
+                        </div>
+                        <div id="dash-recent-shop-orders-list">
+                            <!-- Dynamic recent shop orders -->
                         </div>
                     </div>
                 </section>
@@ -1152,7 +1181,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="js/data.js?v=27.0"></script>
-    <script src="js/app.js?v=27.0"></script>
+    <script src="js/data.js?v=30.0"></script>
+    <script src="js/app.js?v=30.0"></script>
 </body>
 </html>
