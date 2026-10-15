@@ -39,67 +39,76 @@
     --secondary-light: #3b1d54;
     --accent: #22c55e;
     --bg-main: #0d0914;
-    --bg-surface: #1c152b;
-    --bg-card: #1c152b;
-    --bg-subtle: #241b37;
+    --bg-surface: rgba(28, 21, 43, 0.75);
+    --bg-card: rgba(28, 21, 43, 0.68);
+    --bg-subtle: rgba(36, 27, 55, 0.60);
     --text-main: #fdf4ff;
     --text-secondary: #d8b4e2;
     --text-muted: #9d8ba9;
-    --border-color: #38294f;
+    --border-color: rgba(168, 85, 247, 0.30);
     --gold: #fbbf24;
 }
 
+/* On desktop monitors: Use natural 16:9 widescreen wallpaper without distortion or over-zoom */
 [data-theme="halloween"] body {
-    background-color: #09060f;
+    background: linear-gradient(rgba(13, 9, 20, 0.65), rgba(13, 9, 20, 0.78)), url('../img/halloween-bg.jpg') center center / cover no-repeat fixed #09060f;
     color: var(--text-main);
     min-height: 100vh;
-    position: relative;
 }
 
-/* 🎃 High-definition vertical Halloween background tailored for mobile screens */
-[data-theme="halloween"] body::before {
+/* 🎃 Inside the Phone App: High-definition 9:16 vertical wallpaper fitted exactly to the phone screen */
+[data-theme="halloween"] .mobile-app-container {
+    position: relative;
+    background-color: transparent;
+    box-shadow: 0 10px 45px rgba(0, 0, 0, 0.85);
+    border-left: 1px solid rgba(168, 85, 247, 0.25);
+    border-right: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+[data-theme="halloween"] .mobile-app-container::before {
     content: '';
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100%;
-    height: 100%;
+    max-width: 440px;
+    height: 100vh;
     background-image: 
-        linear-gradient(180deg, rgba(13, 9, 20, 0.60) 0%, rgba(13, 9, 20, 0.45) 30%, rgba(13, 9, 20, 0.70) 70%, rgba(13, 9, 20, 0.90) 100%),
+        linear-gradient(180deg, rgba(13, 9, 20, 0.32) 0%, rgba(13, 9, 20, 0.20) 25%, rgba(13, 9, 20, 0.50) 65%, rgba(13, 9, 20, 0.82) 100%),
         url('../img/halloween-mobile-bg.jpg');
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    z-index: -1;
+    z-index: 0;
     pointer-events: none;
 }
 
-[data-theme="halloween"] .mobile-app-container {
-    background-color: rgba(13, 9, 20, 0.78);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75);
-    border-left: 1px solid rgba(168, 85, 247, 0.2);
-    border-right: 1px solid rgba(168, 85, 247, 0.2);
+/* Ensure all interactive app elements sit above the fixed background layer */
+[data-theme="halloween"] .mobile-app-container > * {
+    position: relative;
+    z-index: 1;
 }
 
+/* Premium Glassmorphic Navigation & Headers */
 [data-theme="halloween"] .app-header {
-    background: rgba(22, 16, 34, 0.92);
+    background: rgba(18, 12, 28, 0.82);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border-bottom-color: var(--border-color);
+    border-bottom: 1px solid rgba(168, 85, 247, 0.25);
 }
 
 [data-theme="halloween"] .brand-text h1 {
     color: var(--text-main);
 }
 
+/* Hero Banner with luminous translucency */
 [data-theme="halloween"] .client-hero-banner {
-    background: linear-gradient(135deg, #2b1836 0%, #1e1327 50%, #371842 100%);
-    border-color: #552766;
-    box-shadow: 0 6px 25px rgba(255, 117, 24, 0.15);
+    background: linear-gradient(135deg, rgba(43, 24, 54, 0.75) 0%, rgba(30, 19, 39, 0.80) 50%, rgba(55, 24, 66, 0.75) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    box-shadow: 0 6px 25px rgba(255, 117, 24, 0.20);
 }
 
 [data-theme="halloween"] .client-hero-banner h2 {
@@ -116,28 +125,35 @@
     border-color: #ff9142;
 }
 
+/* Cards with translucent glassmorphism so the pumpkins, castle and moonlight shine through */
 [data-theme="halloween"] .service-card,
 [data-theme="halloween"] .step-card,
 [data-theme="halloween"] .client-history-card,
 [data-theme="halloween"] .staff-select-card {
-    background: var(--bg-card);
-    border-color: var(--border-color);
+    background: rgba(28, 21, 43, 0.68);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(168, 85, 247, 0.25);
 }
 
 [data-theme="halloween"] .staff-select-card.selected {
     border-color: var(--primary);
-    background: var(--primary-light);
+    background: rgba(255, 117, 24, 0.18);
 }
 
 [data-theme="halloween"] .app-bottom-nav,
 [data-theme="halloween"] .app-top-nav {
-    background: rgba(22, 16, 34, 0.95);
-    border-color: var(--border-color);
+    background: rgba(18, 12, 28, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: rgba(168, 85, 247, 0.25);
 }
 
 [data-theme="halloween"] .app-sticky-header {
-    background: rgba(18, 12, 28, 0.96);
-    border-bottom-color: var(--border-color);
+    background: rgba(18, 12, 28, 0.90);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom-color: rgba(168, 85, 247, 0.25);
 }
 
 
