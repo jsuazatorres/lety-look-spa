@@ -2,7 +2,7 @@
  * LETY LOOK SPA - Application Logic & Controllers
  */
 
-window.cleanNumber = function(val) {
+window.cleanNumber = function (val) {
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
     if (!val) return 0;
     const cleaned = String(val).replace(/[^0-9.-]/g, '');
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
-        
+
         let icon = 'fa-circle-check';
         if (type === 'error') icon = 'fa-circle-exclamation';
         if (type === 'info') icon = 'fa-circle-info';
@@ -243,6 +243,26 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('kpi-services-count').textContent = services.length;
         document.getElementById('kpi-staff-count').textContent = staff.filter(s => s.status === 'active').length;
 
+        // Shop Orders & Dedicated Store Revenue calculation
+        let rawOrders = (window.dataManager && typeof window.dataManager.getShopOrders === 'function')
+            ? window.dataManager.getShopOrders()
+            : (JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS || 'lety_look_orders')) || []);
+        const validShopOrders = (Array.isArray(rawOrders) ? rawOrders : []).filter(ord => ord && (ord.orderNumber || (Array.isArray(ord.items) && ord.items.length > 0)));
+
+        const totalShopRevenue = validShopOrders.reduce((sum, ord) => sum + (Number(ord.total) || 0), 0);
+        const todayShopOrders = validShopOrders.filter(ord => ord.date && ord.date.startsWith(todayStr));
+        const todayShopRevenue = todayShopOrders.reduce((sum, ord) => sum + (Number(ord.total) || 0), 0);
+
+        const shopRevenueEl = document.getElementById('kpi-shop-revenue');
+        const shopSubtextEl = document.getElementById('kpi-shop-subtext');
+        if (shopRevenueEl) {
+            shopRevenueEl.textContent = formatCurrency(totalShopRevenue);
+        }
+        if (shopSubtextEl) {
+            const todayPart = todayShopRevenue > 0 ? ` (${formatCurrency(todayShopRevenue)} hoy)` : '';
+            shopSubtextEl.textContent = `${validShopOrders.length} ${validShopOrders.length === 1 ? 'pedido' : 'pedidos'}${todayPart}`;
+        }
+
         // Render Today's appointments list
         const todayListEl = document.getElementById('dash-today-appointments-list');
         todayListEl.innerHTML = '';
@@ -261,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             todayAppointments.forEach(apt => {
                 const item = document.createElement('div');
                 item.className = 'today-item';
-                
+
                 const statusBadgeClass = `status-${apt.status}`;
                 const statusLabels = {
                     confirmed: 'Confirmada',
@@ -311,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const catBarsEl = document.getElementById('dash-category-bars');
         catBarsEl.innerHTML = '';
         const categories = window.dataManager.getCategories();
-        
+
         // Count category occurrences in all appointments
         const categoryCounts = { manicura: 0, pedicura: 0, peluqueria: 0, tintura: 0 };
         appointments.forEach(apt => {
@@ -346,11 +366,99 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             catBarsEl.appendChild(catItem);
         });
+
+        // Render Recent Shop Orders list
+        const recentOrdersEl = document.getElementById('dash-recent-shop-orders-list');
+        if (recentOrdersEl) {
+            recentOrdersEl.innerHTML = '';
+            if (validShopOrders.length === 0) {
+                recentOrdersEl.innerHTML = `
+                    <div style="text-align: center; padding: 2.2rem 1rem; color: var(--text-light);">
+                        <i class="fa-solid fa-cart-shopping" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.45;"></i>
+                        <p style="font-size: 0.92rem; margin-bottom: 0.25rem; font-weight: 600; color: var(--text-main);">Sin compras registradas aún</p>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Los pedidos de la tienda online aparecerán aquí con sus ingresos de forma independiente.</p>
+                    </div>
+                `;
+            } else {
+                // Show up to 4 most recent orders
+                const topOrders = [...validShopOrders].reverse().slice(0, 4);
+                const orderGrid = document.createElement('div');
+                orderGrid.style.cssText = 'display:flex; flex-direction:column; gap:0.65rem; padding-top:0.25rem;';
+
+                topOrders.forEach(ord => {
+                    const item = document.createElement('div');
+                    item.className = 'today-item';
+                    item.style.borderLeft = '3px solid #ff7518';
+                    item.style.padding = '0.75rem 1rem';
+                    item.style.cursor = 'pointer';
+                    item.title = 'Click para ver en el panel de pedidos de la tienda';
+
+                    let dateStr = 'Reciente';
+                    if (ord.date) {
+                        try {
+                            const d = new Date(ord.date);
+                            if (!isNaN(d.getTime())) {
+                                const day = String(d.getDate()).padStart(2, '0');
+                                const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                                let hours = d.getHours();
+                                const minutes = String(d.getMinutes()).padStart(2, '0');
+                                const ampm = hours >= 12 ? 'PM' : 'AM';
+                                hours = hours % 12 || 12;
+                                dateStr = `${day} ${months[d.getMonth()]}, ${hours}:${minutes} ${ampm}`;
+                            }
+                        } catch (e) { }
+                    }
+
+                    const orderNum = ord.orderNumber || ('#PED-' + (ord.id ? String(ord.id).slice(-4) : '0000'));
+                    const clientName = (ord.clientName && ord.clientName.trim()) || 'Cliente';
+                    const totalVal = Number(ord.total) || 0;
+                    const itemsCount = (ord.items || []).reduce((acc, it) => acc + (Number(it.qty) || 1), 0);
+
+                    item.innerHTML = `
+                        <div class="today-time" style="min-width: 90px;">
+                            <span style="font-size: 0.82rem; font-weight: 800; color: #ff7518;">${orderNum}</span>
+                            <small style="display:block; font-size: 0.68rem; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> ${dateStr}</small>
+                        </div>
+                        <div class="today-info">
+                            <h4 style="font-size: 0.9rem; margin-bottom: 0.15rem;">${clientName}</h4>
+                            <p style="font-size: 0.78rem; color: var(--text-muted);">
+                                <i class="fa-solid fa-box-open" style="color:var(--primary); font-size:0.75rem; margin-right:4px;"></i> ${itemsCount} producto${itemsCount === 1 ? '' : 's'} &bull; 
+                                ${ord.deliveryType === 'pickup' ? '<i class="fa-solid fa-store"></i> En Spa' : '<i class="fa-solid fa-truck"></i> Domicilio'}
+                            </p>
+                        </div>
+                        <div class="today-actions" style="text-align: right; gap: 0.4rem;">
+                            <div style="font-weight: 800; font-size: 0.95rem; color: #ff7518;">${formatCurrency(totalVal)}</div>
+                            <span class="status-badge status-confirmed" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">
+                                <i class="fa-solid fa-check"></i> Pagado
+                            </span>
+                        </div>
+                    `;
+
+                    item.addEventListener('click', navigateToShopOrders);
+                    orderGrid.appendChild(item);
+                });
+
+                recentOrdersEl.appendChild(orderGrid);
+            }
+        }
+    }
+
+    function navigateToShopOrders() {
+        switchView('shop');
+        setTimeout(() => {
+            const btnOrders = document.getElementById('btn-shop-tab-orders');
+            if (btnOrders) {
+                btnOrders.click();
+            }
+        }, 60);
     }
 
     document.getElementById('dash-view-all-appointments-btn')?.addEventListener('click', () => {
         switchView('appointments');
     });
+
+    document.getElementById('dash-kpi-shop-card')?.addEventListener('click', navigateToShopOrders);
+    document.getElementById('dash-view-all-shop-orders-btn')?.addEventListener('click', navigateToShopOrders);
 
     // =========================================================================
     // 2. AGENDA / CALENDAR VIEW CONTROLLER
@@ -380,8 +488,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Timeline hours from 08:00 to 20:00
         const hours = [
-            '08:00', '09:00', '10:00', '11:00', '12:00', 
-            '13:00', '14:00', '15:00', '16:00', '17:00', 
+            '08:00', '09:00', '10:00', '11:00', '12:00',
+            '13:00', '14:00', '15:00', '16:00', '17:00',
             '18:00', '19:00', '20:00'
         ];
 
@@ -409,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 slotAppointments.forEach(apt => {
                     const chip = document.createElement('div');
                     chip.className = 'apt-card-chip';
-                    
+
                     const staffMember = staffList.find(s => s.id === apt.staffId);
                     const staffColor = staffMember ? staffMember.color : 'var(--primary)';
                     chip.style.borderLeftColor = staffColor;
@@ -490,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Apply Search Filter
         if (state.appointmentsSearch.trim()) {
             const query = state.appointmentsSearch.toLowerCase().trim();
-            appointments = appointments.filter(a => 
+            appointments = appointments.filter(a =>
                 (a.clientName && a.clientName.toLowerCase().includes(query)) ||
                 (a.clientPhone && a.clientPhone.toLowerCase().includes(query)) ||
                 (a.serviceName && a.serviceName.toLowerCase().includes(query)) ||
@@ -667,7 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'service-card';
 
-            const imgMarkup = srv.image 
+            const imgMarkup = srv.image
                 ? `<img src="${srv.image}" alt="${srv.name}" class="service-card-img" onerror="this.outerHTML='<div class=\\'service-card-img-placeholder\\'><i class=\\'fa-solid fa-spa\\'></i></div>'">`
                 : `<div class="service-card-img-placeholder"><i class="fa-solid fa-spa"></i></div>`;
 
@@ -1367,7 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Search query filter
         if (clientsSearchQuery.trim()) {
             const query = clientsSearchQuery.toLowerCase().trim();
-            clients = clients.filter(c => 
+            clients = clients.filter(c =>
                 (c.name && c.name.toLowerCase().includes(query)) ||
                 (c.email && c.email.toLowerCase().includes(query)) ||
                 (c.phone && c.phone.includes(query))
@@ -1727,12 +1835,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-size:0.72rem; color:#15803d; font-weight:700;">Margen: ${margin}%</div>
                 </td>
                 <td>
-                    ${isOutOfStock 
-                        ? `<span class="status-badge" style="background:#fee2e2; color:#b91c1c; font-weight:800;"><i class="fa-solid fa-circle-xmark"></i> Agotado</span>`
-                        : isLowStock 
+                    ${isOutOfStock
+                    ? `<span class="status-badge" style="background:#fee2e2; color:#b91c1c; font-weight:800;"><i class="fa-solid fa-circle-xmark"></i> Agotado</span>`
+                    : isLowStock
                         ? `<span class="status-badge" style="background:#fef3c7; color:#b45309; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> Bajo Stock (${stock})</span>`
                         : `<span class="status-badge status-confirmed" style="font-weight:800;"><i class="fa-solid fa-check"></i> Disponible (${stock})</span>`
-                    }
+                }
                 </td>
                 <td style="text-align: right;">
                     <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
@@ -1914,7 +2022,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Expose helpers globally so HTML onclick handlers always work
     window.openShopProductModal = openShopProductModal;
-    window.deleteAdminShopProduct = function(productId) {
+    window.deleteAdminShopProduct = function (productId) {
         const products = getAdminShopProducts();
         const prod = products.find(p => p.id === productId);
         if (prod) {
@@ -1982,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         orders.forEach(ord => {
             const tr = document.createElement('tr');
-            
+
             // Format full date & time with AM/PM
             let dateStr = 'Reciente';
             if (ord.date) {
@@ -1999,10 +2107,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         hours = hours % 12 || 12;
                         dateStr = `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
 
-            let itemsListHtml = (ord.items || []).map(it => 
+            let itemsListHtml = (ord.items || []).map(it =>
                 `<span style="display:inline-block; background:var(--bg-subtle); border:1px solid var(--border-color); padding:0.15rem 0.45rem; border-radius:4px; font-size:0.75rem; margin:0.1rem 0.2rem 0.1rem 0;">
                     <strong>${it.qty || 1}x</strong> ${it.name || 'Producto'}
                 </span>`
@@ -2030,10 +2138,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${ord.notes ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.2rem; font-style:italic;">Nota: "${ord.notes}"</div>` : ''}
                 </td>
                 <td>
-                    ${ord.deliveryType === 'pickup' 
-                        ? `<span class="status-badge" style="background:#f1f5f9; color:#475569; font-weight:700;"><i class="fa-solid fa-store"></i> En Spa</span>`
-                        : `<span class="status-badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;" title="${ord.deliveryAddress || ''}"><i class="fa-solid fa-truck"></i> Domicilio</span>`
-                    }
+                    ${ord.deliveryType === 'pickup'
+                    ? `<span class="status-badge" style="background:#f1f5f9; color:#475569; font-weight:700;"><i class="fa-solid fa-store"></i> En Spa</span>`
+                    : `<span class="status-badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;" title="${ord.deliveryAddress || ''}"><i class="fa-solid fa-truck"></i> Domicilio</span>`
+                }
                 </td>
                 <td>
                     <div style="font-weight:800; font-size:0.95rem; color:var(--primary);">${formatCurrency(totalVal)}</div>
@@ -2196,7 +2304,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     products.push(productData);
                 }
                 localStorage.setItem('lety_look_shop_products', JSON.stringify(products));
-            } catch(saveErr) {
+            } catch (saveErr) {
                 console.error('Error saving shop product:', saveErr);
             }
 
@@ -2234,12 +2342,18 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('lety_shop_updated', () => {
             renderShopAdminView();
             renderShopOrdersView();
+            if (state.currentView === 'dashboard') {
+                renderDashboard();
+            }
         });
 
         window.addEventListener('storage', (e) => {
             if (e.key === 'lety_look_shop_products' || e.key === 'lety_look_orders') {
                 renderShopAdminView();
                 renderShopOrdersView();
+                if (state.currentView === 'dashboard') {
+                    renderDashboard();
+                }
             }
         });
 
@@ -2249,6 +2363,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (collectionName === 'shop_products' || collectionName === 'orders') {
                     renderShopAdminView();
                     renderShopOrdersView();
+                    if (state.currentView === 'dashboard') {
+                        renderDashboard();
+                    }
                 }
             });
         }
