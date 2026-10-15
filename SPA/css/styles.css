@@ -185,6 +185,17 @@
     background-repeat: no-repeat;
 }
 
+@media (max-width: 768px) {
+    [data-theme="halloween"] body {
+        background-image: 
+            linear-gradient(180deg, rgba(13, 9, 20, 0.65) 0%, rgba(13, 9, 20, 0.82) 100%),
+            url('../img/halloween-mobile-bg.jpg');
+        background-size: cover;
+        background-position: center top;
+        background-attachment: scroll;
+    }
+}
+
 [data-theme="halloween"] .sidebar {
     background: rgba(18, 12, 27, 0.88);
     backdrop-filter: blur(18px);
