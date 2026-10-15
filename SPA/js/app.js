@@ -2152,13 +2152,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-circle-check"></i> Pagado
                     </span>
                 </td>
-                <td style="text-align: right;">
+                <td style="text-align: right; white-space: nowrap;">
                     <a href="https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn-icon" title="Contactar por WhatsApp" style="color:#25d366; border-color:#25d366; display:inline-flex;">
                         <i class="fa-brands fa-whatsapp"></i>
                     </a>
+                    <button type="button" class="btn-icon btn-delete-shop-order" data-id="${ord.id}" data-num="${orderNum}" title="Eliminar este pedido" style="color:#ef4444; border-color:rgba(239,68,68,0.3); display:inline-flex; margin-left:0.35rem;">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
                 </td>
             `;
             tbody.appendChild(tr);
+        });
+
+        // Attach delete listeners to each individual order
+        tbody.querySelectorAll('.btn-delete-shop-order').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const orderId = btn.getAttribute('data-id');
+                const orderNum = btn.getAttribute('data-num') || 'este pedido';
+                if (confirm(`¿Estás segura de que deseas eliminar el pedido ${orderNum}? Esta acción lo borrará del historial para no ocupar espacio de almacenamiento.`)) {
+                    if (window.dataManager && typeof window.dataManager.deleteShopOrder === 'function') {
+                        window.dataManager.deleteShopOrder(orderId);
+                    } else {
+                        let ords = JSON.parse(localStorage.getItem('lety_look_orders')) || [];
+                        ords = ords.filter(o => o && o.id !== orderId && o.orderNumber !== orderId);
+                        localStorage.setItem('lety_look_orders', JSON.stringify(ords));
+                        window.dispatchEvent(new CustomEvent('lety_shop_updated'));
+                    }
+                    renderShopOrdersView();
+                    showToast(`Pedido ${orderNum} eliminado del historial`, 'info');
+                }
+            });
         });
     }
 
@@ -2210,6 +2233,26 @@ document.addEventListener('DOMContentLoaded', () => {
             renderShopOrdersView();
             renderShopAdminView();
             showToast('Pedidos e inventario actualizados', 'info');
+        });
+
+        document.getElementById('btn-clear-all-orders')?.addEventListener('click', () => {
+            const currentOrders = (window.dataManager && typeof window.dataManager.getShopOrders === 'function')
+                ? window.dataManager.getShopOrders()
+                : (JSON.parse(localStorage.getItem('lety_look_orders')) || []);
+            if (!currentOrders || currentOrders.length === 0) {
+                showToast('No hay pedidos en el historial para eliminar', 'info');
+                return;
+            }
+            if (confirm(`¿Estás segura de que deseas eliminar TODOS los ${currentOrders.length} pedidos de la tienda? Se limpiará el historial completo para no ocupar espacio de almacenamiento.`)) {
+                if (window.dataManager && typeof window.dataManager.clearAllShopOrders === 'function') {
+                    window.dataManager.clearAllShopOrders();
+                } else {
+                    localStorage.setItem('lety_look_orders', JSON.stringify([]));
+                    window.dispatchEvent(new CustomEvent('lety_shop_updated'));
+                }
+                renderShopOrdersView();
+                showToast('Todos los pedidos han sido eliminados correctamente', 'success');
+            }
         });
 
         // Open Add Product Modal button

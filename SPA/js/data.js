@@ -1097,6 +1097,24 @@ class SpaDataManager {
         return valid;
     }
 
+    deleteShopOrder(orderId) {
+        let orders = this.getShopOrders();
+        orders = orders.filter(o => o && o.id !== orderId && o.orderNumber !== orderId);
+        this.saveShopOrders(orders);
+        window.dispatchEvent(new CustomEvent('lety_shop_updated', {
+            detail: { deletedId: orderId, orders }
+        }));
+        return true;
+    }
+
+    clearAllShopOrders() {
+        this.saveShopOrders([]);
+        window.dispatchEvent(new CustomEvent('lety_shop_updated', {
+            detail: { cleared: true, orders: [] }
+        }));
+        return true;
+    }
+
     /**
      * Process a client purchase/order:
      * 1. Automatically reduces inventory quantities for ordered items
