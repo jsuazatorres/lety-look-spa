@@ -1379,6 +1379,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (clientState.currentTab === 'tab-my-appointments') {
                     renderMyAppointments();
                 }
+            } else if (collectionName === 'shop_products') {
+                renderShopClientTab();
+                updateCartBadgeAndFloatingBar();
             }
         });
     }

@@ -15,14 +15,17 @@ const DEFAULT_FIREBASE_CONFIG = {
 
 const FIREBASE_CONFIG_KEY = 'lety_look_firebase_config';
 
-window.STORAGE_KEYS = window.STORAGE_KEYS || {
+window.STORAGE_KEYS = Object.assign(window.STORAGE_KEYS || {}, {
     SERVICES: 'lety_look_services',
     STAFF: 'lety_look_staff',
     APPOINTMENTS: 'lety_look_appointments',
     SETTINGS: 'lety_look_settings',
     CLIENTS: 'lety_look_clients',
-    CURRENT_CLIENT: 'lety_look_current_client'
-};
+    CURRENT_CLIENT: 'lety_look_current_client',
+    SHOP_PRODUCTS: 'lety_look_shop_products',
+    ORDERS: 'lety_look_orders',
+    CLIENT_CART: 'lety_look_client_cart'
+});
 var STORAGE_KEYS = window.STORAGE_KEYS;
 
 class FirebaseCloudService {
@@ -212,6 +215,31 @@ class FirebaseCloudService {
 
             this.triggerSync('clients');
         }, err => console.log('Firestore clients sync error:', err));
+
+        // 6. Sync Shop Products
+        this.db.collection('lety_look').doc('shop_products').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data && Array.isArray(data.list) && data.list.length > 0) {
+                    localStorage.setItem(STORAGE_KEYS.SHOP_PRODUCTS, JSON.stringify(data.list));
+                    this.triggerSync('shop_products');
+                    window.dispatchEvent(new CustomEvent('lety_shop_updated', { detail: { products: data.list } }));
+                }
+            }
+        }, err => console.log('Firestore shop_products sync error:', err));
+
+        // 7. Sync Shop Orders
+        this.db.collection('lety_look').doc('orders').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data && Array.isArray(data.list)) {
+                    const valid = data.list.filter(ord => ord && (ord.orderNumber || (Array.isArray(ord.items) && ord.items.length > 0)));
+                    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(valid));
+                    this.triggerSync('orders');
+                    window.dispatchEvent(new CustomEvent('lety_shop_updated', { detail: { orders: valid } }));
+                }
+            }
+        }, err => console.log('Firestore orders sync error:', err));
     }
 
     async saveCloudDocument(collectionName, docId, data) {
@@ -326,6 +354,25 @@ class FirebaseCloudService {
                 const ref = this.db.collection('lety_look_clients').doc(c.id);
                 batch.set(ref, c, { merge: true });
             });
+
+            // Shop Products
+            const shopProducts = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_PRODUCTS)) || [];
+            if (shopProducts.length > 0) {
+                batch.set(this.db.collection('lety_look').doc('shop_products'), {
+                    list: shopProducts,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            }
+
+            // Orders
+            const orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS)) || [];
+            if (orders.length > 0) {
+                const validOrders = orders.filter(ord => ord && (ord.orderNumber || (Array.isArray(ord.items) && ord.items.length > 0)));
+                batch.set(this.db.collection('lety_look').doc('orders'), {
+                    list: validOrders,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            }
 
             await batch.commit();
             return { success: true, message: '¡Datos locales sincronizados exitosamente con la nube de Firebase!' };

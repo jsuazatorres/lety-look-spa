@@ -2,7 +2,7 @@
  * Data Storage & Seed Module for LETY LOOK SPA
  */
 
-window.STORAGE_KEYS = window.STORAGE_KEYS || {
+window.STORAGE_KEYS = Object.assign(window.STORAGE_KEYS || {}, {
     SERVICES: 'lety_look_services',
     STAFF: 'lety_look_staff',
     APPOINTMENTS: 'lety_look_appointments',
@@ -12,7 +12,7 @@ window.STORAGE_KEYS = window.STORAGE_KEYS || {
     SHOP_PRODUCTS: 'lety_look_shop_products',
     ORDERS: 'lety_look_orders',
     CLIENT_CART: 'lety_look_client_cart'
-};
+});
 var STORAGE_KEYS = window.STORAGE_KEYS;
 
 const DEFAULT_SHOP_PRODUCTS = [
@@ -377,6 +377,23 @@ class SpaDataManager {
     }
 
     init() {
+        // Clean up accidental undefined key in localStorage if left from previous versions
+        try {
+            if (localStorage.getItem('undefined') !== null) {
+                const rawUndef = localStorage.getItem('undefined');
+                localStorage.removeItem('undefined');
+                const productsExisting = localStorage.getItem(STORAGE_KEYS.SHOP_PRODUCTS);
+                if (!productsExisting && rawUndef) {
+                    try {
+                        const parsed = JSON.parse(rawUndef);
+                        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].costPrice) {
+                            localStorage.setItem(STORAGE_KEYS.SHOP_PRODUCTS, JSON.stringify(parsed));
+                        }
+                    } catch(e) {}
+                }
+            }
+        } catch(e) {}
+
         if (!localStorage.getItem(STORAGE_KEYS.SERVICES)) {
             localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(DEFAULT_SERVICES));
         }
@@ -1004,7 +1021,12 @@ class SpaDataManager {
         const stored = localStorage.getItem(STORAGE_KEYS.SHOP_PRODUCTS);
         if (stored) {
             try {
-                return JSON.parse(stored);
+                const list = JSON.parse(stored);
+                if (Array.isArray(list) && list.length > 0) {
+                    // Valid products must have a name and cost/sale price or category
+                    const validProducts = list.filter(p => p && p.name && (p.costPrice !== undefined || p.salePrice !== undefined || p.category));
+                    if (validProducts.length > 0) return validProducts;
+                }
             } catch (e) {
                 console.error('Error parsing stored shop products:', e);
             }
@@ -1050,7 +1072,15 @@ class SpaDataManager {
         const stored = localStorage.getItem(STORAGE_KEYS.ORDERS);
         if (stored) {
             try {
-                return JSON.parse(stored);
+                const list = JSON.parse(stored);
+                if (Array.isArray(list)) {
+                    // Filter out corrupt items or products accidentally saved to orders
+                    const valid = list.filter(ord => ord && (ord.orderNumber || (Array.isArray(ord.items) && ord.items.length > 0)));
+                    if (valid.length !== list.length) {
+                        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(valid));
+                    }
+                    return valid;
+                }
             } catch (e) {
                 console.error('Error parsing stored shop orders:', e);
             }
@@ -1059,11 +1089,12 @@ class SpaDataManager {
     }
 
     saveShopOrders(orders) {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+        const valid = (Array.isArray(orders) ? orders : []).filter(ord => ord && (ord.orderNumber || (Array.isArray(ord.items) && ord.items.length > 0)));
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(valid));
         if (window.cloudService && window.cloudService.isInitialized) {
-            window.cloudService.saveCloudDocument('lety_look', 'orders', { list: orders, updatedAt: new Date().toISOString() });
+            window.cloudService.saveCloudDocument('lety_look', 'orders', { list: valid, updatedAt: new Date().toISOString() });
         }
-        return orders;
+        return valid;
     }
 
     /**
@@ -1089,21 +1120,23 @@ class SpaDataManager {
             this.saveShopProducts(products);
         }
 
-        // 2. Build the order entity
+        // 2. Build the order entity with verified timestamp and order number
+        const nowIso = new Date().toISOString();
+        const randNum = Math.floor(1000 + Math.random() * 9000);
         const newOrder = {
             id: 'ord-' + Date.now(),
-            orderNumber: '#PED-' + Math.floor(1000 + Math.random() * 9000),
-            date: new Date().toISOString(),
-            clientName: orderData.clientName || 'Cliente',
-            clientPhone: orderData.clientPhone || '',
+            orderNumber: orderData.orderNumber || ('#PED-' + randNum),
+            date: orderData.date || nowIso,
+            clientName: (orderData.clientName && orderData.clientName.trim()) || 'Cliente',
+            clientPhone: (orderData.clientPhone && orderData.clientPhone.trim()) || '',
             clientEmail: orderData.clientEmail || '',
             deliveryType: orderData.deliveryType || 'pickup', // 'pickup' | 'delivery'
             deliveryAddress: orderData.deliveryAddress || '',
             paymentMethod: orderData.paymentMethod || 'transfer', // 'transfer' | 'cash'
-            paymentStatus: orderData.paymentStatus || 'Pagado', // 'Pagado' | 'Efectuado'
+            paymentStatus: orderData.paymentStatus || 'Pagado',
             fulfillmentStatus: 'Por despachar',
-            items: orderData.items || [],
-            total: orderData.total || 0,
+            items: Array.isArray(orderData.items) ? orderData.items : [],
+            total: Number(orderData.total) || 0,
             notes: orderData.notes || ''
         };
 

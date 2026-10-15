@@ -1954,9 +1954,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const ordersBadge = document.getElementById('shop-tab-orders-label');
         const kpiOrdersCount = document.getElementById('shop-kpi-orders-count');
 
-        const orders = (window.dataManager && typeof window.dataManager.getShopOrders === 'function')
+        let orders = (window.dataManager && typeof window.dataManager.getShopOrders === 'function')
             ? window.dataManager.getShopOrders()
-            : (JSON.parse(localStorage.getItem('lety_look_orders')) || []);
+            : (JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS || 'lety_look_orders')) || []);
+
+        // Filter out any corrupted entries or products accidentally loaded as orders
+        orders = (Array.isArray(orders) ? orders : []).filter(ord => ord && (ord.orderNumber || (Array.isArray(ord.items) && ord.items.length > 0)));
 
         if (ordersBadge) ordersBadge.textContent = `Pedidos de Clientes (${orders.length})`;
         if (kpiOrdersCount) kpiOrdersCount.textContent = `${orders.length} ${orders.length === 1 ? 'Efectuado' : 'Efectuados'}`;
@@ -1970,7 +1973,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td colspan="7" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
                         <div style="font-size:1.8rem; margin-bottom:0.4rem; opacity:0.4;"><i class="fa-solid fa-cart-shopping"></i></div>
                         <div style="font-weight:700; font-size:0.95rem; color:var(--text-main);">No hay pedidos registrados aún</div>
-                        <div style="font-size:0.82rem;">Cuando un cliente confirme su canasta en la App, aparecerá aquí y su stock se descontará automáticamente.</div>
+                        <div style="font-size:0.82rem;">Cuando un cliente confirme su canasta en la App, aparecerá aquí con fecha, hora, productos y su stock se descontará automáticamente.</div>
                     </td>
                 </tr>
             `;
@@ -1979,26 +1982,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         orders.forEach(ord => {
             const tr = document.createElement('tr');
-            const dateStr = ord.date ? new Date(ord.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Reciente';
+            
+            // Format full date & time with AM/PM
+            let dateStr = 'Reciente';
+            if (ord.date) {
+                try {
+                    const d = new Date(ord.date);
+                    if (!isNaN(d.getTime())) {
+                        const day = String(d.getDate()).padStart(2, '0');
+                        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                        const month = months[d.getMonth()];
+                        const year = d.getFullYear();
+                        let hours = d.getHours();
+                        const minutes = String(d.getMinutes()).padStart(2, '0');
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12 || 12;
+                        dateStr = `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+                    }
+                } catch(e) {}
+            }
 
             let itemsListHtml = (ord.items || []).map(it => 
                 `<span style="display:inline-block; background:var(--bg-subtle); border:1px solid var(--border-color); padding:0.15rem 0.45rem; border-radius:4px; font-size:0.75rem; margin:0.1rem 0.2rem 0.1rem 0;">
-                    <strong>${it.qty}x</strong> ${it.name}
+                    <strong>${it.qty || 1}x</strong> ${it.name || 'Producto'}
                 </span>`
             ).join('');
 
-            const cleanPhone = (ord.clientPhone || '').replace(/\D/g, '');
+            const orderNum = ord.orderNumber || ('#PED-' + (ord.id ? String(ord.id).slice(-4) : '0000'));
+            const clientName = (ord.clientName && ord.clientName.trim()) || 'Cliente';
+            const clientPhone = (ord.clientPhone && ord.clientPhone.trim()) || 'Sin WhatsApp';
+            const cleanPhone = clientPhone.replace(/\D/g, '');
             const waPhone = cleanPhone.startsWith('57') ? cleanPhone : ('57' + cleanPhone);
-            const waMsg = `¡Hola ${ord.clientName}! ✨ Te escribimos de LETY LOOK SPA sobre tu pedido ${ord.orderNumber}.`;
+            const waMsg = `¡Hola ${clientName}! ✨ Te escribimos de LETY LOOK SPA sobre tu pedido ${orderNum}.`;
+            const totalVal = Number(ord.total) || 0;
 
             tr.innerHTML = `
                 <td>
-                    <div style="font-weight:800; color:var(--primary); font-size:0.9rem;">${ord.orderNumber}</div>
+                    <div style="font-weight:800; color:var(--primary); font-size:0.9rem;">${orderNum}</div>
                     <div style="font-size:0.72rem; color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${dateStr}</div>
                 </td>
                 <td>
-                    <div style="font-weight:700; color:var(--text-main); font-size:0.88rem;">${ord.clientName}</div>
-                    <div style="font-size:0.75rem; color:var(--text-secondary);"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> ${ord.clientPhone}</div>
+                    <div style="font-weight:700; color:var(--text-main); font-size:0.88rem;">${clientName}</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary);"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> ${clientPhone}</div>
                 </td>
                 <td style="max-width:240px;">
                     <div>${itemsListHtml}</div>
@@ -2011,7 +2036,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 </td>
                 <td>
-                    <div style="font-weight:800; font-size:0.95rem; color:var(--primary);">${formatCurrency(ord.total)}</div>
+                    <div style="font-weight:800; font-size:0.95rem; color:var(--primary);">${formatCurrency(totalVal)}</div>
                     <div style="font-size:0.7rem; color:var(--text-muted);">${ord.paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo'}</div>
                 </td>
                 <td>
@@ -2217,6 +2242,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderShopOrdersView();
             }
         });
+
+        // Live cloud sync when orders or products update in Firestore
+        if (window.cloudService) {
+            window.cloudService.onSync((collectionName) => {
+                if (collectionName === 'shop_products' || collectionName === 'orders') {
+                    renderShopAdminView();
+                    renderShopOrdersView();
+                }
+            });
+        }
     }
     setupShopSubTabs();
 
