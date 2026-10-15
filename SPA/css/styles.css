@@ -706,6 +706,8 @@ input, select, textarea {
 .kpi-gold .kpi-icon-wrap { background: var(--gold-light); color: var(--gold); }
 .kpi-emerald .kpi-icon-wrap { background: var(--emerald-light); color: var(--emerald); }
 .kpi-blue .kpi-icon-wrap { background: #eff6ff; color: #2563eb; }
+.kpi-orange .kpi-icon-wrap { background: #fff7ed; color: #ea580c; }
+[data-theme="halloween"] .kpi-orange .kpi-icon-wrap { background: rgba(255, 117, 24, 0.2); color: #ff7518; }
 
 .kpi-details span {
     font-size: 0.82rem;
